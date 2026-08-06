@@ -59,61 +59,66 @@ more work for a general audience.
 > or only demo well.
 >
 > That is what we spent this month finding out. We're competing in the Autopilot
-> Asia hackathon, building on Supervity, a platform for what they call AI
-> Employees: agents that run a business process end to end rather than answering
-> questions about it. Ours runs an IT service desk. It reads incoming tickets,
-> works out what is wrong, fixes what it safely can, and passes the rest to a
-> person.
+> Asia hackathon, building on @Supervity, a platform for AI Employees: agents
+> that run a business process end to end rather than answering questions about
+> it. Ours runs an IT service desk.
 >
-> The ticket it refused was the highest priority in the queue and already past
-> its deadline. Every incentive said act.
+> Most teams will show you an agent that closes tickets faster. We went after
+> three different things.
 >
-> It stopped because two employees share the same display name and it could not
-> tell which of them had raised it. Fixing the wrong person's laptop to hit a
-> deadline is not a win. So it handed the ticket to a human with the evidence
-> attached, and waited. 32 tickets were held back for that same reason.
+> **1. Stop the tickets happening at all.** Resolving 44 shared drive requests
+> quickly is being efficient at something that should not exist. So instead of
+> working the queue, our agent works out what keeps filling it. 460 tickets
+> turned out to be 15 actual root causes, each with a proposed permanent fix and
+> the team who owns it. 380 of those tickets are preventable. They do not need
+> resolving, because they do not need to happen. That number is the one we would
+> ask anyone to judge us on.
 >
-> That restraint is the entire design. The hard part of giving software real
+> **2. Know when to stop.** The ticket it refused was the highest priority in the
+> queue and already past its deadline. Every incentive said act. It stopped
+> because two employees share the same display name and it could not tell which
+> of them had raised it. Fixing the wrong person's laptop to hit a deadline is
+> not a win. So it handed the ticket to a human with the evidence attached, and
+> waited. 32 tickets were held back for that same reason.
+>
+> **3. Never invent a number.** One of our metrics is blank. No part of the
+> system could measure it honestly, so rather than estimating something
+> plausible, the dashboard shows a dash and prints the reason underneath. The
+> chat surface works the same way: ask it something outside what the agents
+> actually observed and it tells you it cannot answer, instead of guessing well.
+>
+> Those three choices are really one idea. The hard part of giving software real
 > responsibility was never how much it can do on its own. It is whether it knows
 > where its own judgement runs out, and stops there instead of guessing
 > confidently.
 >
-> The rest of the build follows from the same instinct. Rather than closing
-> tickets faster, it asks which problems keep producing them. 460 tickets turned
-> out to be 15 actual root causes, each with a proposed permanent fix and the
-> team who owns it. 380 of those tickets are preventable. They do not need
-> resolving, because they do not need to happen.
->
-> Every decision it makes is logged and auditable. Where it could not measure
-> something honestly, it left the number blank rather than estimating one.
->
-> None of this was a solo effort. Thevesh A/L Chandran has been building this
+> None of this was a solo effort. @Thevesh A/L Chandran has been building this
 > with me since round one, and it would not exist without him. Thank you for
 > sticking with it through the long nights.
 >
-> Thanks to Vijay Navaluri and the Supervity team for running Autopilot Asia, and
-> for a problem statement with real teeth in it. The dataset had duplicate names,
-> four date formats and a major incident hiding inside 25 separate tickets. We
-> learned more from what it refused to make easy than from anything we got right
-> first time.
+> Thanks to @Vijay Navaluri and the @Supervity team for running Autopilot Asia,
+> and for a problem statement with real teeth in it. The dataset had duplicate
+> names, four date formats and a major incident hiding inside 25 separate
+> tickets. We learned more from what it refused to make easy than from anything
+> we got right first time.
 >
 > An agent that acts fast is easy to build. One that stops is the one you would
 > actually let near your company.
 >
 > #AIEmployees #Supervity #SupervityAI #NoCode #AgenticAI #AutopilotHackathon
 
-**Why it works:** "refused" lands in the first four words, and the next sentence
-signals it was deliberate, so a cold reader knows this is a design story rather
-than a failure story before the fold. Paragraph two gives anyone a reason to care
-before any product name appears: waiting on IT is universal, and it frames the
-whole thing as a test of whether agents can do real work. Only then does it
-explain Supervity and the competition.
+**Why it works:** the differentiators are now the spine of the post rather than
+details scattered through it. "Most teams will show you an agent that closes
+tickets faster. We went after three different things" arrives early and tells the
+reader exactly what they are about to get, and the three numbered points each
+carry one hard number.
 
-**No em dashes**, per request. Commas and full stops throughout.
+Note it says "most teams" rather than "other teams". Positioning against the
+default approach reads as confidence; positioning against your competitors reads
+as insecurity, and some of them will see the post.
 
-**If you want it shorter,** cut the "Every decision it makes is logged" paragraph
-first, then the "Rather than closing tickets faster" one. Losing the second costs
-you the differentiator, so cut it only if length is genuinely a problem.
+**If it runs long,** cut point 3. It is the subtlest of the three and the only
+one without a memorable number attached.
 
 ---
 
