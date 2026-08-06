@@ -88,8 +88,8 @@ more work for a general audience.
 > something honestly, it left the number blank rather than estimating one.
 >
 > None of this was a solo effort. Thevesh A/L Chandran has been building this
-> with me since round one, and most of what actually works came out of us
-> disagreeing about it first. Grateful to have had someone to argue with at 2am.
+> with me since round one, and it would not exist without him. Thank you for
+> sticking with it through the long nights.
 >
 > Thanks to Vijay Navaluri and the Supervity team for running Autopilot Asia, and
 > for a problem statement with real teeth in it. The dataset had duplicate names,
