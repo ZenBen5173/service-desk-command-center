@@ -164,7 +164,8 @@ runs on a hidden dataset with the same schema.
 | [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) | The 7-minute demo, word for word |
 | [`DEPLOY.md`](DEPLOY.md) | Getting a stable public URL |
 | [`LINKEDIN_POST.md`](LINKEDIN_POST.md) | Submission post drafts |
-| [`docs/demo-deck.html`](docs/demo-deck.html) | Presentation deck, opens in any browser |
+| [`docs/Service-Desk-Command-Center.pptx`](docs/Service-Desk-Command-Center.pptx) | Presentation deck, 11 slides with speaker notes |
+| [`docs/demo-deck.html`](docs/demo-deck.html) | The same deck as a browser fallback |
 | [`docs/auto-workflows/`](docs/auto-workflows/) | The Orchestrator and all seven Operators, exported from Auto |
 | [`docs/auto-operators/`](docs/auto-operators/) | Paste-ready build prompts and fix packs |
 | [`Round2_Trap_Map_and_Plan.md`](Round2_Trap_Map_and_Plan.md) | Every seeded trap in the dataset, mapped to real rows |
