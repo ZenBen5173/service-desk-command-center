@@ -66,13 +66,16 @@ more work for a general audience.
 > Most teams will show you an agent that closes tickets faster. We went after
 > three different things.
 >
-> **1. 🔁 Stop the tickets happening at all.** Resolving 44 shared drive requests
-> quickly is being efficient at something that should not exist. So instead of
-> working the queue, our agent works out what keeps filling it. 460 tickets
-> turned out to be 15 actual root causes, each with a proposed permanent fix and
-> the team who owns it. 380 of those tickets are preventable. They do not need
-> resolving, because they do not need to happen. That number is the one we would
-> ask anyone to judge us on.
+> **1. 🔁 Stop the tickets happening at all.** 37 people raised a password reset
+> ticket. A normal service desk resolves 37 tickets. Ours noticed they were one
+> problem, checked whether a self-service route existed, found none, and proposed
+> building one: a password reset portal with MFA, owned by the IAM team. Ship
+> that and those 37 tickets stop arriving. Not resolved faster. Gone.
+>
+> Across the whole backlog, 460 tickets turned out to be 15 root causes, each
+> with a proposed permanent fix and the team who owns it. 380 of those tickets
+> are preventable. They do not need resolving, because they do not need to
+> happen. That is the number we would ask anyone to judge us on.
 >
 > **2. ✋ Know when to stop.** The ticket it refused was the highest priority in the
 > queue and already past its deadline. Every incentive said act. It stopped

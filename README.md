@@ -26,11 +26,25 @@ filling it:
 - Propose the **permanent fix**, name the owning team, draft the missing article
 - A human approves before anything ships
 
+**Worked example.** 37 people raised a password reset ticket. A normal service
+desk resolves 37 tickets. This agent noticed they are one problem, checked the
+knowledge base, found no self-service route existed, and proposed the fix:
+
+> *Implement a Self-Service Password Reset portal integrated with MFA, so users
+> verify their own identity and reset credentials without help desk
+> intervention.* — owner: IAM Team
+
+Ship that and those 37 tickets stop arriving. Not resolved faster. Gone. The same
+logic runs across all 15 classes: shared drive access is 44 tickets that a
+Group Policy drive mapping plus a self-service permissions portal would remove;
+printers offline is 43 that SNMP monitoring and a universal print driver would
+remove.
+
 **460 tickets turned out to be 15 root causes. 380 of them are preventable.**
-That is the number to judge this on, and it is reported as two figures that are
-never blended: **75 already collapsed** into single incidents (work avoided), and
-**380 preventable** if the proposed fixes ship (a forecast, labelled as one).
-Adding them together would make a better headline and a worse answer.
+Reported as two figures that are never blended: **75 already collapsed** into
+single incidents (work avoided today), and **380 preventable** if the proposed
+fixes ship (a forecast, labelled as one). Adding them together would make a
+better headline and a worse answer.
 
 → `/elimination`
 
@@ -41,11 +55,21 @@ change request outranks everything, then an access or entitlement change, then
 unresolved requester identity, then confidence below the gate. **None can be
 overridden by urgency.**
 
-It held back **32 tickets** because three employees share a display name and it
-would not guess which person raised them. One was the highest priority in the
-queue and already past SLA.
+**Worked example.** A ticket came in at Highest priority, already past its SLA
+deadline, with a known fix available. Every incentive said act. The agent
+stopped, because the reporter's display name matched two different employees in
+the directory and it could not tell which of them had raised it. Applying a fix
+to the wrong person's account to hit a deadline is not a win, so it escalated
+with both candidate records attached and waited. **32 tickets** were held back
+for that reason alone.
 
-Every refusal reaches a human with the evidence that stopped the agent and what
+**A second example, a different reason.** ITSM-2212 had a fix ready and an open
+change request awaiting board approval. Change control outranks confidence, so
+the agent stopped and opened the approval request in GitHub rather than shipping.
+A human reviewed it and upheld the block, and that decision is on the record with
+its reason.
+
+Every refusal reaches a person with the evidence that stopped the agent and what
 it would have done instead. **9,752 policy evaluations** are logged, each naming
 the rule, the threshold in force at that moment, and what it was compared
 against, so a later edit never rewrites history.
@@ -64,6 +88,20 @@ probe from health inferred out of recent runs. The chat surface holds **no
 language model at all** — answers are assembled from mirrored agent output and
 cite the Operator they came from, so a question outside that data returns *"I
 can't answer that from agent data"* rather than a plausible guess.
+
+**Worked example.** Ask the AI Manager *"what are the top problems?"* and it
+answers with the 15 classes and cites the Major-Incident Correlator run that
+found them. Ask it *"tell me a joke"* and it replies:
+
+> *I can't answer that from agent data, so I won't guess.*
+
+...then lists what it can actually answer. It holds no language model, so it has
+nothing to improvise with.
+
+**The same rule on health.** OneDrive shows as degraded because runs using it
+actually failed, and the card says the status was *inferred from recent agent
+runs* rather than directly probed, because the Operators reach OneDrive with
+their own credentials and this backend has nothing to test.
 
 Round 1 caught the platform's own chat summaries inventing ticket numbers while
 its audit log said otherwise. That is the failure this whole design is built
