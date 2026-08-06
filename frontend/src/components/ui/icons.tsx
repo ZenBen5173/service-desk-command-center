@@ -86,6 +86,8 @@ import {
   GripVertical,
   Repeat,
   Flag,
+  Target,
+  Database,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -97,6 +99,8 @@ export const Icons = {
   settings: Settings,
   workbench: BotMessageSquare,
   home: Home,
+  target: Target,
+  database: Database,
 
   // Actions
   logout: LogOut,

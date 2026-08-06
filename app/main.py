@@ -37,11 +37,19 @@ from .core.storage import GCSStorage, LocalStorage, StorageBackend
 from .middleware import AuditMiddleware
 from .routers import (
     admin_router,
+    agent_router,
     audit_router,
     auth_router,
+    business_router,
+    elimination_router,
     examples_router,
     health_router,
+    insights_router,
+    integrations_router,
     items_router,
+    manager_router,
+    policies_router,
+    workbench_router,
 )
 from .security import get_current_user, verify_access
 
@@ -153,6 +161,30 @@ api_router.include_router(items_router)
 
 # Authorization pattern examples
 api_router.include_router(examples_router)
+
+# Live agent activity mirrored from Supervity Auto
+api_router.include_router(agent_router)
+
+# Elimination Backlog — ranked ticket classes from Operator findings
+api_router.include_router(elimination_router)
+
+# AI Policies — editable governance rules and their evaluation log
+api_router.include_router(policies_router)
+
+# Workbench — human-in-the-loop queue for agent escalations
+api_router.include_router(workbench_router)
+
+# Data Manager — live integration registry and health
+api_router.include_router(integrations_router)
+
+# Business outcome metrics — the judged figures
+api_router.include_router(business_router)
+
+# AI Insights — observations drawn from Operator findings
+api_router.include_router(insights_router)
+
+# AI Manager — question-and-answer over the operation
+api_router.include_router(manager_router)
 
 
 # =============================================================================

@@ -27,6 +27,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./app:/app/app
+      - ./tests:/app/tests
       - ./utils:/app/utils
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini
@@ -49,16 +50,32 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: prod
+      target: ${FRONTEND_TARGET:-dev}
       args:
         - NEXTAUTH_URL=${NEXTAUTH_URL}
         - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
         - NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH:-}
+    volumes:
+      # Hot reload in dev target: edits on the host appear instantly in the container.
+      # node_modules and .next stay container-side so the host never shadows them.
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    # The package.json dev script uses --turbopack, whose file watcher does not
+    # support polling. On a Windows bind mount inotify events never arrive, so
+    # Turbopack never notices an edit and every change needs a container
+    # restart. The webpack dev server honours WATCHPACK_POLLING, so use it here.
+    # Production builds are untouched and still use the default script.
+    command: ["npx", "next", "dev", "--port", "3000"]
     ports:
       - "127.0.0.1:3001:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-development}
+      # Windows bind mounts do not deliver inotify events into the Linux VM, so
+      # Next's watcher never sees edits. Polling is the only reliable trigger.
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
     env_file:
       - .env
     depends_on:

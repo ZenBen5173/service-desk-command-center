@@ -62,7 +62,9 @@ const navItems: NavSection[] = [
     title: 'Platform',
     items: [
       { href: '/', label: 'Dashboard', icon: Icons.dashboard },
+      { href: '/elimination', label: 'Elimination', icon: Icons.target },
       { href: '/workbench', label: 'Workbench', icon: Icons.workbench },
+      { href: '/data-manager', label: 'Data Manager', icon: Icons.database },
     ],
   },
   {

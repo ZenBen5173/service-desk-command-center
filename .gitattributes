@@ -1,0 +1,5 @@
+# Shell scripts must keep LF endings or they break inside Linux containers
+# (Windows checkouts would otherwise get CRLF and fail with "not found").
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf

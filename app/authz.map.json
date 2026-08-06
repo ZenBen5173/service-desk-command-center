@@ -44,6 +44,50 @@
     "description": "Item CRUD operations - requires approved user",
     "ANY": ["admin", "user"]
   },
+  "/api/agent/sync.*": {
+    "description": "Trigger a refresh from Supervity Auto - admin only",
+    "ALL": ["admin"]
+  },
+  "/api/agent/workflows/.*/execute": {
+    "description": "Triggering an Auto workflow run - admin only",
+    "ALL": ["admin"]
+  },
+  "/api/policies/.*/reset": {
+    "description": "Resetting a policy to defaults - admin only",
+    "ALL": ["admin"]
+  },
+  "/api/policies.*": {
+    "description": "AI Policies - view and edit governance rules",
+    "ANY": ["admin", "user"]
+  },
+  "/api/manager.*": {
+    "description": "AI Manager - question and answer over the operation",
+    "ANY": ["admin", "user"]
+  },
+  "/api/insights.*": {
+    "description": "AI Insights - observations from Operator findings",
+    "ANY": ["admin", "user"]
+  },
+  "/api/business.*": {
+    "description": "Business outcome metrics",
+    "ANY": ["admin", "user"]
+  },
+  "/api/integrations.*": {
+    "description": "Data Manager - live integration health",
+    "ANY": ["admin", "user"]
+  },
+  "/api/workbench.*": {
+    "description": "Workbench - human-in-the-loop exception queue",
+    "ANY": ["admin", "user"]
+  },
+  "/api/elimination.*": {
+    "description": "Elimination Backlog - ranked ticket classes from Operator findings",
+    "ANY": ["admin", "user"]
+  },
+  "/api/agent.*": {
+    "description": "Read live agent activity from Supervity Auto",
+    "ANY": ["admin", "user"]
+  },
 
   "/api/documents/{document_id}": {
     "description": "Scenario 1: Ownership Check", "ANY": [ "admin", { "claims": { "sub": "{context.resource.owner_id}" } }]

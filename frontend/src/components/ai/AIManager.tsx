@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -103,6 +103,8 @@ export function AIManager() {
     }
   }, [isManagerOpen])
 
+  const [followUps, setFollowUps] = useState<string[]>([])
+
   // Handle sending a message
   const handleSendMessage = useCallback(async (content: string) => {
     // Add user message
@@ -113,37 +115,41 @@ export function AIManager() {
     setIsTyping(true)
 
     try {
-      // Call backend API using apiClient
-      interface ToolCallResponse {
-        id: string
-        name: string
-        args: Record<string, unknown>
-        result?: unknown
-      }
-      const data = await apiClient.post<{ response: string; tool_calls?: ToolCallResponse[] }>('/api/ai/chat', {
-        message: content,
-        history: chatHistory.filter(m => !m.isLoading).map(m => ({
-          role: m.role,
-          content: m.content,
-        })),
-        context: { page: currentPageContext },
-      })
+      // Answers come from the AI Manager service, which assembles them from
+      // mirrored Supervity Auto data and names the Operator each figure came
+      // from. Deliberately not a language model: a summary that drifts from
+      // the audit record is the exact failure this project set out to avoid.
+      const data = await apiClient.post<{
+        answer: string
+        intent: string
+        citations: string[]
+        suggestions: string[]
+      }>('/api/manager/ask', { question: content })
 
-      // Remove loading message and add real response
+      const cited = data.citations?.length
+        ? `
+
+Source: ${data.citations.join(', ')}`
+        : ''
+
       addMessage({
         role: 'assistant',
-        content: data.response || 'I apologize, but I encountered an issue processing your request.',
-        toolCalls: data.tool_calls,
+        content: (data.answer || 'I could not answer that from agent data.') + cited,
       })
+
+      if (data.suggestions?.length) {
+        setFollowUps(data.suggestions)
+      }
     } catch {
       addMessage({
         role: 'assistant',
-        content: 'I apologize, but I encountered an error. Please try again.',
+        content:
+          'I could not reach the operation data. Check the backend is running, then try again.',
       })
     } finally {
       setIsTyping(false)
     }
-  }, [addMessage, chatHistory, currentPageContext, setIsTyping])
+  }, [addMessage, setIsTyping])
 
   // Handle quick action click
   const handleQuickAction = (action: string) => {
@@ -319,7 +325,9 @@ export function AIManager() {
                       How can I help you?
                     </h3>
                     <p className="mt-2 max-w-sm text-muted-foreground">
-                      Ask me anything about your data, or use a quick action below.
+                      Ask about the operation. Every answer is built from what the
+                      Operators reported on Supervity Auto, and names the agent it
+                      came from.
                     </p>
 
                     {/* Quick Actions - Capability Bubbles */}
@@ -339,6 +347,24 @@ export function AIManager() {
                       />
                     ))}
                     <div ref={messagesEndRef} />
+
+                    {followUps.length > 0 && !isTyping && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {followUps.map((q) => (
+                          <button
+                            key={q}
+                            onClick={() => handleQuickAction(q)}
+                            className={cn(
+                              'rounded-full border border-brand-cornflower/25 bg-white',
+                              'px-3 py-1.5 text-xs font-medium text-brand-navy',
+                              'transition-colors hover:bg-brand-cornflower/10'
+                            )}
+                          >
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -10,13 +10,18 @@ interface Capability {
   query: string
 }
 
+// Questions this surface can actually answer from mirrored agent data. Each
+// maps to a real intent in the AI Manager service — nothing here is a prompt
+// the operation cannot ground in an Operator's own output.
 const CAPABILITIES: Capability[] = [
-  { icon: Icons.helpCircle, label: 'What can you help me with?', query: 'What can you help me with?' },
-  { icon: Icons.activity, label: 'Show recent activity', query: 'Show me recent activity' },
-  { icon: Icons.fileText, label: 'Generate a report', query: 'Generate a report' },
-  { icon: Icons.brain, label: 'Create a policy', query: 'Help me create a new policy' },
-  { icon: Icons.lightbulb, label: 'Show insights', query: 'Show me AI insights' },
-  { icon: Icons.info, label: 'Explain this page', query: 'Explain this page to me' },
+  { icon: Icons.activity, label: 'How are we doing?', query: 'How are we doing?' },
+  { icon: Icons.target, label: 'Top problems', query: 'What are the top problems?' },
+  { icon: Icons.trendingUp, label: 'What can we prevent?', query: 'How many tickets can we prevent?' },
+  { icon: Icons.clock, label: 'SLA and breaches', query: 'How is our SLA compliance?' },
+  { icon: Icons.workbench, label: 'Waiting on a human', query: 'What is waiting on a human?' },
+  { icon: Icons.brain, label: 'Policies in force', query: 'What policies are in force?' },
+  { icon: Icons.lightbulb, label: 'Insights', query: 'What insights do you have?' },
+  { icon: Icons.users, label: 'The agents', query: 'What agents are running?' },
 ]
 
 interface CapabilityBubblesProps {

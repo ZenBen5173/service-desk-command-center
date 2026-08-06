@@ -1,660 +1,625 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
+import { useCallback, useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CardWatermark } from '@/components/ui/card-watermark'
 import { Icons } from '@/components/ui/icons'
-import { PolicyCard, type Policy } from '@/components/ai/policies/PolicyCard'
-import { PolicyDetailModal } from '@/components/ai/policies/PolicyDetailModal'
-import { PolicyEditModal } from '@/components/ai/policies/PolicyEditModal'
-import { CreateWithAI } from '@/components/ai/policies/CreateWithAI'
-import { PermissionMatrixTab } from '@/components/ai/policies/PermissionMatrixTab'
-import { StructuredBuilder } from '@/components/ai/policies/StructuredBuilder'
-
-// ============================================================================
-// Demo Data — Replace with your own API integration
-// ============================================================================
-
-const DEMO_POLICIES: Policy[] = [
-  {
-    id: 'demo-001',
-    name: 'Auto-Approve Low Value Invoices',
-    description: 'Automatically approve invoices under $500 from approved vendors.',
-    natural_language: 'If an invoice total is less than $500 and the vendor is in our approved vendor list, automatically approve for payment without requiring manual review.',
-    summary: 'Auto-approves low-value invoices from trusted vendors to reduce manual workload.',
-    policy_type: 'logical',
-    dsl: { conditions: [{ field: 'amount', operator: 'less_than', value: '500' }, { field: 'vendor_status', operator: 'equals', value: 'approved' }], actions: [{ type: 'auto_approve' }], match_mode: 'all' },
-    refined_instruction: null,
-    ai_instruction: 'WHEN amount < 500 AND vendor_status = approved THEN auto_approve',
-    entity_name: 'invoice',
-    is_active: true,
-    priority: 10,
-    tags: ['finance', 'auto-approve', 'demo'],
-    execution_count: 120,
-    last_executed_at: new Date().toISOString(),
-    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-  },
-  {
-    id: 'demo-002',
-    name: 'CFO Approval for Large Transactions',
-    description: 'Require CFO approval for any transaction exceeding $50,000.',
-    natural_language: 'Any transaction or purchase order exceeding $50,000 must be reviewed and approved by the CFO before processing.',
-    summary: 'Enforces executive approval on high-value transactions.',
-    policy_type: 'logical',
-    dsl: { conditions: [{ field: 'amount', operator: 'greater_than', value: '50000' }], actions: [{ type: 'require_approval', value: 'CFO' }], match_mode: 'all' },
-    refined_instruction: null,
-    ai_instruction: 'WHEN amount > 50000 THEN require_approval(CFO)',
-    entity_name: 'transaction',
-    is_active: true,
-    priority: 5,
-    tags: ['finance', 'escalation', 'demo'],
-    execution_count: 45,
-    last_executed_at: new Date(Date.now() - 3600000).toISOString(),
-    created_at: new Date(Date.now() - 25 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-  },
-  {
-    id: 'demo-003',
-    name: 'New Employee Onboarding Checklist',
-    description: 'Automatically assign onboarding steps when a new employee is created.',
-    natural_language: 'When a new employee record is created, automatically assign the standard onboarding checklist, notify their manager, and schedule the Day 1 orientation meeting.',
-    summary: 'Triggers automated onboarding workflow for new hires.',
-    policy_type: 'natural_language',
-    dsl: null,
-    refined_instruction: 'On new employee creation: assign onboarding checklist, notify manager, schedule Day 1 orientation.',
-    ai_instruction: 'On new employee creation: assign onboarding checklist, notify manager, schedule Day 1 orientation.',
-    entity_name: 'employee',
-    is_active: true,
-    priority: 15,
-    tags: ['hr', 'onboarding', 'demo'],
-    execution_count: 30,
-    last_executed_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 6 * 3600000).toISOString(),
-  },
-  {
-    id: 'demo-004',
-    name: 'Suspicious Login Alert',
-    description: 'Flag and alert on logins from new devices or unusual locations.',
-    natural_language: 'If a user logs in from a new device or from a country they have never logged in from before, flag the session for security review and send an alert to the user email.',
-    summary: 'Detects and alerts on anomalous login patterns for security.',
-    policy_type: 'natural_language',
-    dsl: null,
-    refined_instruction: 'On login: if device is new OR country is new, flag session for review, send email alert.',
-    ai_instruction: 'On login: if device is new OR country is new, flag session for review, send email alert.',
-    entity_name: 'session',
-    is_active: true,
-    priority: 1,
-    tags: ['security', 'alerting', 'demo'],
-    execution_count: 85,
-    last_executed_at: new Date(Date.now() - 30 * 60000).toISOString(),
-    created_at: new Date(Date.now() - 15 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 8 * 3600000).toISOString(),
-  },
-  {
-    id: 'demo-005',
-    name: 'Enterprise Ticket Escalation',
-    description: 'Auto-escalate support tickets from high-value customers.',
-    natural_language: 'When a support ticket is created by an enterprise-tier customer or a customer with annual contract value over $100K, automatically escalate to Tier 2 support and set priority to high.',
-    summary: 'Ensures enterprise customers receive priority support.',
-    policy_type: 'logical',
-    dsl: { conditions: [{ field: 'customer_tier', operator: 'equals', value: 'enterprise' }], actions: [{ type: 'escalate', value: 'tier_2' }, { type: 'set_priority', value: 'high' }], match_mode: 'any' },
-    refined_instruction: null,
-    ai_instruction: 'WHEN customer_tier = enterprise OR contract_value > 100000 THEN escalate(tier_2), set_priority(high)',
-    entity_name: 'ticket',
-    is_active: false,
-    priority: 8,
-    tags: ['support', 'escalation', 'demo'],
-    execution_count: 15,
-    last_executed_at: new Date(Date.now() - 12 * 3600000).toISOString(),
-    created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 10 * 3600000).toISOString(),
-  },
-]
-
-// ============================================================================
-// Animation Variants
-// ============================================================================
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { formatRelative } from '@/lib/agent'
+import {
+  outcomeTone,
+  policiesApi,
+  type EffectiveInputs,
+  type EvaluationSummary,
+  type Policy,
+  type PolicyChange,
+  type PolicyEvaluation,
+  type PolicyParameter,
+} from '@/lib/policies'
+import { cn } from '@/lib/utils'
 
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05 },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 }
 
-// ============================================================================
-// Types
-// ============================================================================
+type ParamValue = number | boolean | string
 
-type TabType = 'policies' | 'create-ai' | 'structured' | 'matrix'
-type FilterType = 'all' | 'active' | 'inactive' | 'logical' | 'natural_language'
-type SortType = 'newest' | 'oldest' | 'priority' | 'name' | 'executions'
+function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <Card className='relative h-full overflow-hidden'>
+      <CardWatermark opacity={3} scale={0.9} />
+      <CardContent className='relative z-10 p-5'>
+        <p className='text-micro uppercase text-brand-muted'>{label}</p>
+        <p className='mt-2 font-display text-[2rem] font-bold leading-none text-brand-navy'>
+          {value}
+        </p>
+        {hint && <p className='mt-2 text-xs text-muted-foreground'>{hint}</p>}
+      </CardContent>
+    </Card>
+  )
+}
 
-// ============================================================================
-// Tab Configuration
-// ============================================================================
-
-const TABS = [
-  { id: 'policies' as TabType, label: 'Policies', Icon: Icons.layers },
-  { id: 'create-ai' as TabType, label: 'Create with AI', Icon: Icons.sparkles },
-  { id: 'structured' as TabType, label: 'Structured Builder', Icon: Icons.grid },
-  { id: 'matrix' as TabType, label: 'Permission Matrix', Icon: Icons.table },
-]
-
-// ============================================================================
-// Page Component
-// ============================================================================
-
-export default function AIPoliciesPage() {
-  // State
-  const [policies, setPolicies] = useState<Policy[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<TabType>('policies')
-  
-  // Modal state
-  const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null)
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
-  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  
-  // Filters
-  const [filter, setFilter] = useState<FilterType>('all')
-  const [sortBy, setSortBy] = useState<SortType>('newest')
-  const [searchQuery, setSearchQuery] = useState('')
-
-  // Structured builder state
-  const [structuredDSL, setStructuredDSL] = useState<{conditions: Array<{field: string; operator: string; value: string}>; actions: Array<{type: string; value?: string}>; match_mode: 'all' | 'any'} | null>(null)
-  const [structuredName, setStructuredName] = useState('')
-  const [isSavingStructured, setIsSavingStructured] = useState(false)
-
-  // ============================================================================
-  // Data — Loaded from demo data (replace with API fetch)
-  // ============================================================================
-
-  const loadPolicies = useCallback(() => {
-    setIsLoading(true)
-    // Simulate loading — replace with real API call
-    setTimeout(() => {
-      setPolicies(DEMO_POLICIES)
-      setIsLoading(false)
-    }, 300)
-  }, [])
-
-  useEffect(() => {
-    loadPolicies()
-  }, [loadPolicies])
-
-  // ============================================================================
-  // Policy Actions
-  // ============================================================================
-
-  const handleCardClick = useCallback((policy: Policy) => {
-    setSelectedPolicy(policy)
-    setIsDetailModalOpen(true)
-  }, [])
-
-  const handleEditFromDetail = useCallback((policy: Policy) => {
-    setEditingPolicy(policy)
-    setIsEditModalOpen(true)
-  }, [])
-
-  const handleSavePolicy = useCallback(async () => {
-    loadPolicies()
-  }, [loadPolicies])
-
-  const togglePolicyStatus = useCallback(async (id: string, _isActive: boolean) => {
-    // Toggle locally (replace with API call)
-    setPolicies(prev => prev.map(p => p.id === id ? { ...p, is_active: !p.is_active } : p))
-  }, [])
-
-  const deletePolicy = useCallback(async (id: string) => {
-    // Delete locally (replace with API call)
-    setPolicies(prev => prev.filter(p => p.id !== id))
-  }, [])
-
-  const handlePolicyCreate = async (policyData: {
-    name: string
-    description: string
-    naturalLanguage: string
-    policyType: 'logical' | 'natural_language'
-    dsl: unknown
-    refinedInstruction: string | null
-    entityName: string | null
-    tags: string[]
-    priority: number
-  }) => {
-    // Add locally (replace with API call)
-    const newPolicy: Policy = {
-      id: `user-${Date.now()}`,
-      name: policyData.name,
-      description: policyData.description,
-      natural_language: policyData.naturalLanguage,
-      summary: policyData.description,
-      policy_type: policyData.policyType,
-      dsl: policyData.dsl as Policy['dsl'],
-      refined_instruction: policyData.refinedInstruction,
-      ai_instruction: policyData.naturalLanguage,
-      entity_name: policyData.entityName,
-      is_active: true,
-      priority: policyData.priority,
-      tags: policyData.tags,
-      execution_count: 0,
-      last_executed_at: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-    setPolicies(prev => [newPolicy, ...prev])
-    setActiveTab('policies')
-  }
-
-  // ============================================================================
-  // Filtering & Sorting
-  // ============================================================================
-
-  const filteredPolicies = policies
-    .filter((policy) => {
-      if (filter === 'active' && !policy.is_active) return false
-      if (filter === 'inactive' && policy.is_active) return false
-      if (filter === 'logical' && policy.policy_type !== 'logical') return false
-      if (filter === 'natural_language' && policy.policy_type !== 'natural_language') return false
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        return (
-          policy.name.toLowerCase().includes(query) ||
-          policy.description.toLowerCase().includes(query) ||
-          policy.natural_language.toLowerCase().includes(query) ||
-          policy.tags.some((tag) => tag.toLowerCase().includes(query))
-        )
-      }
-
-      return true
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        case 'oldest':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        case 'priority':
-          return a.priority - b.priority
-        case 'name':
-          return a.name.localeCompare(b.name)
-        case 'executions':
-          return b.execution_count - a.execution_count
-        default:
-          return 0
-      }
-    })
-
-  // ============================================================================
-  // Stats
-  // ============================================================================
-
-  const stats = {
-    total: policies.length,
-    active: policies.filter((p) => p.is_active).length,
-    structured: policies.filter((p) => p.policy_type === 'logical').length,
-    natural: policies.filter((p) => p.policy_type === 'natural_language').length,
-  }
-
-  // ============================================================================
-  // Render
-  // ============================================================================
+function ParameterField({
+  param,
+  draft,
+  onChange,
+}: {
+  param: PolicyParameter
+  draft: ParamValue
+  onChange: (value: ParamValue) => void
+}) {
+  const dirty = draft !== param.value
 
   return (
-    <motion.div
-      className="space-y-6"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Header */}
-      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-display-3 font-bold tracking-tight text-brand-navy lg:text-display-2">
-            AI Policies
-          </h1>
-          <p className="mt-1 text-lg text-muted-foreground">
-            Define business rules in natural language. The AI determines the best format.
-          </p>
+    <div className='space-y-1.5 rounded-lg border border-border/50 bg-white/60 p-3'>
+      <div className='flex items-start justify-between gap-3'>
+        <div className='min-w-0 flex-1'>
+          <p className='text-sm font-medium text-brand-navy'>{param.label}</p>
+          {param.help && (
+            <p className='mt-0.5 text-xs text-muted-foreground'>{param.help}</p>
+          )}
         </div>
-        <Button
-          variant="gradient"
-          onClick={() => setActiveTab('create-ai')}
-          className={activeTab !== 'policies' ? 'opacity-50' : ''}
-        >
-          <Icons.plus className="mr-2 h-4 w-4" />
-          Create Policy
-        </Button>
-      </motion.div>
 
-      {/* Tabs - AT THE TOP */}
-      <motion.div variants={itemVariants}>
-        <div className="flex gap-1 p-1.5 bg-gray-100 rounded-xl">
-          {TABS.map((tab) => (
-            <motion.button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'relative flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                activeTab === tab.id
-                  ? 'text-brand-navy'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              whileHover={{ scale: activeTab === tab.id ? 1 : 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {activeTab === tab.id && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute inset-0 bg-white rounded-lg shadow-sm"
-                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-2">
-                <tab.Icon className="h-4 w-4" />
-                {tab.label}
-              </span>
-            </motion.button>
-          ))}
+        <div className='shrink-0'>
+          {param.type === 'boolean' ? (
+            <Switch
+              checked={Boolean(draft)}
+              onCheckedChange={(checked) => onChange(checked)}
+            />
+          ) : param.type === 'number' ? (
+            <Input
+              type='number'
+              className='w-28 text-right'
+              value={String(draft)}
+              min={param.min}
+              max={param.max}
+              step={param.step ?? 'any'}
+              onChange={(e) => onChange(e.target.value)}
+            />
+          ) : (
+            <Input
+              className='w-44'
+              value={String(draft)}
+              onChange={(e) => onChange(e.target.value)}
+            />
+          )}
         </div>
-      </motion.div>
+      </div>
 
-      {/* Tab Content - Use initial={false} on first render to avoid blank state */}
-      <AnimatePresence mode="popLayout">
-        {activeTab === 'policies' && (
-          <motion.div
-            key="policies-tab"
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.15 }}
-            className="space-y-6"
+      <div className='flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground'>
+        {param.maps_to_input && (
+          <span
+            className='font-mono'
+            title='The Supervity Auto workflow input this value is passed to.'
           >
-          {/* Stats Bar - No initial animation to prevent blank flash */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { value: stats.total, label: 'Total Policies', icon: Icons.layers, bg: 'bg-brand-navy/10', color: 'text-brand-navy' },
-              { value: stats.active, label: 'Active', icon: Icons.check, bg: 'bg-emerald-100', color: 'text-emerald-600' },
-              { value: stats.structured, label: 'Structured', icon: Icons.grid, bg: 'bg-blue-100', color: 'text-blue-600' },
-              { value: stats.natural, label: 'Natural Language', icon: Icons.brain, bg: 'bg-purple-100', color: 'text-purple-600' },
-            ].map((stat) => (
-              <motion.div 
-                key={stat.label}
-                className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-md transition-all cursor-default"
-                whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-              >
-                <div className="flex items-center gap-3">
-                  <motion.div 
-                    className={cn('p-2 rounded-lg', stat.bg)}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: 'spring', stiffness: 400 }}
-                  >
-                    <stat.icon className={cn('h-5 w-5', stat.color)} />
-                  </motion.div>
-                  <div>
-                    <p className={cn('text-2xl font-bold', stat.color)}>
-                      {stat.value}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+            → {param.maps_to_input}
+          </span>
+        )}
+        <span>default {String(param.default)}</span>
+        {param.type === 'number' && param.min !== undefined && (
+          <span>
+            range {param.min}–{param.max}
+          </span>
+        )}
+        {dirty && (
+          <span className='font-medium text-amber-600'>
+            unsaved: {String(param.value)} → {String(draft)}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
 
-          {/* Filters & Search */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Icons.search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search policies..."
+function PolicyPanel({
+  policy,
+  onSaved,
+}: {
+  policy: Policy
+  onSaved: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [drafts, setDrafts] = useState<Record<string, ParamValue>>({})
+  const [saving, setSaving] = useState(false)
+  const [feedback, setFeedback] = useState<string | null>(null)
+  const [problems, setProblems] = useState<string[]>([])
+
+  // Re-seed drafts whenever the saved policy changes, so a save or a reset
+  // elsewhere is reflected instead of leaving stale edits on screen.
+  useEffect(() => {
+    const seeded: Record<string, ParamValue> = {}
+    for (const param of policy.parameters) seeded[param.name] = param.value
+    setDrafts(seeded)
+  }, [policy])
+
+  const dirty = policy.parameters.some((p) => drafts[p.name] !== p.value)
+
+  const save = async () => {
+    setSaving(true)
+    setFeedback(null)
+    setProblems([])
+    try {
+      const changes: Record<string, ParamValue> = {}
+      for (const param of policy.parameters) {
+        if (drafts[param.name] !== param.value) changes[param.name] = drafts[param.name]
+      }
+      const result = await policiesApi.update(policy.key, {
+        parameters: changes,
+        note: 'edited in the Command Center',
+      })
+      if (result.rejected.length > 0) {
+        setProblems(
+          result.rejected.map((r) => `${r.parameter}: ${r.reason}`)
+        )
+      }
+      if (result.changed.length > 0) {
+        setFeedback(
+          `Saved. In force on the next agent run: ${result.changed
+            .map((c) => c.replace('parameters.', ''))
+            .join(', ')}.`
+        )
+      }
+      onSaved()
+    } catch (err) {
+      setProblems([err instanceof Error ? err.message : 'Save failed.'])
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const reset = async () => {
+    setSaving(true)
+    try {
+      await policiesApi.reset(policy.key)
+      setFeedback('Reset to defaults.')
+      onSaved()
+    } catch (err) {
+      setProblems([err instanceof Error ? err.message : 'Reset failed.'])
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const toggleEnabled = async (enabled: boolean) => {
+    setSaving(true)
+    try {
+      await policiesApi.update(policy.key, { enabled, note: 'toggled in the UI' })
+      onSaved()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card className='relative overflow-hidden'>
+      <CardWatermark opacity={3} scale={1} />
+      <CardContent className='relative z-10 p-5'>
+        <div className='flex flex-wrap items-start justify-between gap-3'>
+          <button
+            onClick={() => setOpen(!open)}
+            className='min-w-0 flex-1 text-left'
+          >
+            <div className='flex flex-wrap items-center gap-2'>
+              <h3 className='font-display text-base font-bold text-brand-navy'>
+                {policy.name}
+              </h3>
+              {policy.category && (
+                <span className='rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground'>
+                  {policy.category}
+                </span>
+              )}
+              {!policy.enabled && (
+                <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500'>
+                  Disabled
+                </span>
+              )}
+              <Icons.chevronDown
                 className={cn(
-                  'w-full pl-10 pr-4 py-2.5 rounded-lg border border-input bg-white',
-                  'text-sm focus:outline-none focus:ring-2 focus:ring-brand-cornflower/50'
+                  'h-4 w-4 text-muted-foreground transition-transform',
+                  open && 'rotate-180'
                 )}
               />
             </div>
-
-            {/* Filter */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground whitespace-nowrap">Filter:</span>
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value as FilterType)}
-                className="px-3 py-2.5 rounded-lg border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-cornflower/50"
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="logical">Structured</option>
-                <option value="natural_language">Natural Language</option>
-              </select>
-            </div>
-
-            {/* Sort */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground whitespace-nowrap">Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortType)}
-                className="px-3 py-2.5 rounded-lg border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-cornflower/50"
-              >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="priority">Priority</option>
-                <option value="name">Name</option>
-                <option value="executions">Most Used</option>
-              </select>
-            </div>
-          </motion.div>
-
-          {/* Policy Grid */}
-          <motion.div variants={itemVariants}>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Icons.loader className="h-8 w-8 animate-spin text-brand-cornflower" />
-              </div>
-            ) : filteredPolicies.length === 0 ? (
-              <Card className="relative overflow-hidden">
-                <CardWatermark opacity={3} scale={1} />
-                <CardContent className="relative z-10 flex flex-col items-center justify-center py-16 text-center">
-                  <div className={cn(
-                    'mb-4 flex h-16 w-16 items-center justify-center rounded-2xl',
-                    'bg-gradient-to-br from-brand-cornflower/20 to-brand-purple/20'
-                  )}>
-                    <Icons.brain className="h-8 w-8 text-brand-cornflower" strokeWidth={1.5} />
-                  </div>
-                  <h3 className="font-display text-lg font-semibold text-brand-navy">
-                    {searchQuery || filter !== 'all' ? 'No matching policies' : 'No policies yet'}
-                  </h3>
-                  <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                    {searchQuery || filter !== 'all'
-                      ? 'Try adjusting your search or filter criteria.'
-                      : 'Create your first AI policy using natural language.'}
-                  </p>
-                  <Button
-                    variant="gradient"
-                    className="mt-6"
-                    onClick={() => setActiveTab('create-ai')}
-                  >
-                    <Icons.sparkles className="mr-2 h-4 w-4" />
-                    Create with AI
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredPolicies.map((policy) => (
-                  <PolicyCard
-                    key={policy.id}
-                    policy={policy}
-                    onClick={handleCardClick}
-                  />
-                ))}
-              </div>
+            {policy.description && (
+              <p className='mt-1.5 max-w-3xl text-sm text-muted-foreground'>
+                {policy.description}
+              </p>
             )}
-          </motion.div>
-        </motion.div>
-      )}
+          </button>
 
-      {activeTab === 'create-ai' && (
-        <motion.div
-          key="create-ai-tab"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.15 }}
-        >
-          <Card className="relative overflow-hidden">
-            <CardWatermark opacity={2} scale={1} />
-            <CardContent className="relative z-10 py-8">
-              <CreateWithAI
-                onPolicyCreate={handlePolicyCreate}
-                onCancel={() => setActiveTab('policies')}
-              />
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+          <div className='flex shrink-0 items-center gap-2'>
+            <span className='text-xs text-muted-foreground'>Active</span>
+            <Switch
+              checked={policy.enabled}
+              disabled={saving}
+              onCheckedChange={toggleEnabled}
+            />
+          </div>
+        </div>
 
-      {activeTab === 'structured' && (
-        <motion.div
-          key="structured-tab"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.15 }}
-        >
-          <Card className="relative overflow-hidden">
-            <CardWatermark opacity={2} scale={1} />
-            <CardContent className="relative z-10 py-8">
-              <div className="max-w-3xl mx-auto">
-                <div className="text-center mb-8">
-                  <h2 className="text-xl font-bold text-brand-navy mb-2">
-                    Structured Rule Builder
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Visually build rules with conditions and actions
-                  </p>
-                </div>
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-foreground mb-1.5">Rule Name *</label>
-                  <input
-                    type="text"
-                    value={structuredName}
-                    onChange={(e) => setStructuredName(e.target.value)}
-                    placeholder="e.g., Auto-Approve Low Value Items"
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-base focus:outline-none focus:ring-2 focus:ring-brand-cornflower/50"
-                  />
-                </div>
-                <StructuredBuilder
-                  onChange={(dsl) => setStructuredDSL(dsl)}
-                />
-                <div className="flex justify-center gap-3 mt-8">
-                  <Button variant="ghost" onClick={() => setActiveTab('policies')}>
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="gradient"
-                    disabled={!structuredDSL || structuredDSL.conditions.length === 0 || !structuredName.trim() || isSavingStructured}
-                    onClick={async () => {
-                      if (!structuredDSL || !structuredName.trim()) return
-                      setIsSavingStructured(true)
-                      try {
-                        await handlePolicyCreate({
-                          name: structuredName.trim(),
-                          description: '',
-                          naturalLanguage: `Structured rule: ${structuredName}`,
-                          policyType: 'logical',
-                          dsl: {
-                            conditions: structuredDSL.conditions.map(c => ({ field: c.field, operator: c.operator, value: c.value })),
-                            actions: structuredDSL.actions.map(a => ({ type: a.type, value: a.value })),
-                            match_mode: structuredDSL.match_mode,
-                          },
-                          refinedInstruction: null,
-                          entityName: null,
-                          tags: ['structured'],
-                          priority: 50,
-                        })
-                        setStructuredName('')
-                        setStructuredDSL(null)
-                      } finally {
-                        setIsSavingStructured(false)
+        <AnimatePresence initial={false}>
+          {open && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className='overflow-hidden'
+            >
+              <div className='mt-4 space-y-4'>
+                {policy.rule_text && (
+                  <div className='rounded-lg border border-border/50 bg-muted/20 p-3'>
+                    <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+                      The rule
+                    </p>
+                    <p className='text-sm leading-relaxed text-brand-navy'>
+                      {policy.rule_text}
+                    </p>
+                  </div>
+                )}
+
+                <div className='space-y-2'>
+                  {policy.parameters.map((param) => (
+                    <ParameterField
+                      key={param.name}
+                      param={param}
+                      draft={drafts[param.name] ?? param.value}
+                      onChange={(value) =>
+                        setDrafts((d) => ({ ...d, [param.name]: value }))
                       }
-                    }}
+                    />
+                  ))}
+                </div>
+
+                {problems.length > 0 && (
+                  <div className='rounded-lg border border-red-200 bg-red-50 p-3'>
+                    {problems.map((p) => (
+                      <p key={p} className='text-xs text-red-700'>
+                        {p}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {feedback && (
+                  <p className='text-xs font-medium text-emerald-700'>{feedback}</p>
+                )}
+
+                <div className='flex flex-wrap items-center gap-2'>
+                  <Button
+                    onClick={save}
+                    disabled={!dirty || saving}
+                    variant='gradient'
+                    size='sm'
                   >
-                    {isSavingStructured ? (
-                      <><Icons.loader className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-                    ) : (
-                      <><Icons.check className="mr-2 h-4 w-4" />Save Policy</>
-                    )}
+                    {saving ? 'Saving…' : 'Save changes'}
                   </Button>
+                  <Button onClick={reset} disabled={saving} variant='outline' size='sm'>
+                    Reset to defaults
+                  </Button>
+                  {policy.updated_by && (
+                    <span className='text-xs text-muted-foreground'>
+                      Last changed by {policy.updated_by}{' '}
+                      {formatRelative(policy.updated_at)}
+                    </span>
+                  )}
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function PoliciesPage() {
+  const [policies, setPolicies] = useState<Policy[]>([])
+  const [inputs, setInputs] = useState<EffectiveInputs | null>(null)
+  const [summary, setSummary] = useState<EvaluationSummary | null>(null)
+  const [evaluations, setEvaluations] = useState<PolicyEvaluation[]>([])
+  const [changes, setChanges] = useState<PolicyChange[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<'policies' | 'evaluations' | 'changes'>('policies')
+
+  const load = useCallback(async () => {
+    try {
+      const [list, eff, sum, evals, chg] = await Promise.all([
+        policiesApi.list(),
+        policiesApi.effectiveInputs(),
+        policiesApi.evaluationSummary(),
+        policiesApi.evaluations(100),
+        policiesApi.changes(50),
+      ])
+      setPolicies(list.policies)
+      setInputs(eff)
+      setSummary(sum)
+      setEvaluations(evals.evaluations)
+      setChanges(chg.changes)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load policies.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const blocked =
+    (summary?.by_outcome.block ?? 0) + (summary?.by_outcome.escalate ?? 0)
+
+  return (
+    <motion.div
+      className='space-y-6'
+      variants={containerVariants}
+      initial='hidden'
+      animate='visible'
+    >
+      <motion.div variants={itemVariants}>
+        <h1 className='text-display-3 font-bold tracking-tight text-brand-navy'>
+          AI <span className='text-gradient'>Policies.</span>
+        </h1>
+        <p className='mt-3 max-w-3xl text-lg font-light text-muted-foreground'>
+          The rules the agent must follow. Edit a value here and it is in force
+          on the next agent run — no code, no workflow rebuild.
+        </p>
+        <p className='mt-2 max-w-3xl text-sm text-muted-foreground'>
+          Policies are stored and audited in the Command Center. They are
+          enforced by the Operators on Supervity Auto, which read these values as
+          workflow inputs.
+        </p>
+      </motion.div>
+
+      {error && (
+        <motion.p variants={itemVariants} className='text-sm text-red-600'>
+          {error}
+        </motion.p>
+      )}
+
+      <motion.div
+        className='grid grid-cols-2 gap-4 lg:grid-cols-4'
+        variants={itemVariants}
+      >
+        <Metric
+          label='Active Policies'
+          value={loading ? '…' : String(policies.filter((p) => p.enabled).length)}
+          hint={`${policies.length} defined`}
+        />
+        <Metric
+          label='Evaluations Logged'
+          value={loading ? '…' : String(summary?.total ?? 0)}
+          hint='reported by Operators'
+        />
+        <Metric
+          label='Blocked or Escalated'
+          value={loading ? '…' : String(blocked)}
+          hint='times a policy stopped the agent'
+        />
+        <Metric
+          label='Last Evaluation'
+          value={
+            loading
+              ? '…'
+              : summary?.last_evaluated_at
+                ? formatRelative(summary.last_evaluated_at)
+                : '—'
+          }
+          hint={summary?.total ? undefined : 'no evaluations reported yet'}
+        />
+      </motion.div>
+
+      <motion.div className='flex flex-wrap gap-2' variants={itemVariants}>
+        {(
+          [
+            ['policies', `Policies (${policies.length})`],
+            ['evaluations', `Evaluation log (${summary?.total ?? 0})`],
+            ['changes', `Change history (${changes.length})`],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={cn(
+              'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+              tab === id
+                ? 'border-brand-navy bg-brand-navy text-white'
+                : 'border-border/60 bg-white/60 text-muted-foreground hover:text-brand-navy'
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </motion.div>
+
+      {tab === 'policies' && (
+        <motion.div className='space-y-4' variants={itemVariants}>
+          {loading && policies.length === 0 && (
+            <p className='text-sm text-muted-foreground'>Loading policies…</p>
+          )}
+          {policies.map((policy) => (
+            <PolicyPanel key={policy.key} policy={policy} onSaved={load} />
+          ))}
+
+          {inputs && (
+            <Card className='relative overflow-hidden'>
+              <CardWatermark opacity={3} scale={1.1} />
+              <CardContent className='relative z-10 p-5'>
+                <h2 className='flex items-center gap-2 font-display text-lg font-bold text-brand-navy'>
+                  <Icons.zap
+                    className='h-5 w-5 text-brand-cornflower'
+                    strokeWidth={1.5}
+                  />
+                  What the agent will receive
+                </h2>
+                <p className='mt-1 text-sm text-muted-foreground'>
+                  These are the current policy values, keyed by the Supervity
+                  Auto workflow input each one feeds. This object is what makes
+                  an edit above change agent behaviour on the next run.
+                </p>
+                <pre className='mt-3 max-h-72 overflow-auto rounded-lg border border-border/40 bg-slate-50 p-3 font-mono text-[11px] leading-relaxed text-slate-700'>
+                  {JSON.stringify(inputs.inputs, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          )}
+        </motion.div>
+      )}
+
+      {tab === 'evaluations' && (
+        <motion.div variants={itemVariants}>
+          <Card className='relative overflow-hidden'>
+            <CardWatermark opacity={3} scale={1.1} />
+            <CardContent className='relative z-10 p-5'>
+              <h2 className='font-display text-lg font-bold text-brand-navy'>
+                Every policy evaluation
+              </h2>
+              <p className='mt-1 text-sm text-muted-foreground'>
+                Each row is one rule applied to one thing, as reported by an
+                Operator on Auto — with the threshold that was in force at the
+                time.
+              </p>
+
+              {evaluations.length === 0 ? (
+                <div className='mt-4 rounded-xl border border-dashed border-border/60 py-10 text-center'>
+                  <p className='text-sm font-medium text-brand-navy'>
+                    No evaluations reported yet
+                  </p>
+                  <p className='mx-auto mt-2 max-w-md text-xs text-muted-foreground'>
+                    These appear once an Operator emits a{' '}
+                    <code className='font-mono'>policy_evaluations</code> array.
+                    The update prompt in{' '}
+                    <code className='font-mono'>
+                      docs/auto-operators/04-updates-to-existing-operators.md
+                    </code>{' '}
+                    adds that to the Evidence and Policy Operator.
+                  </p>
+                </div>
+              ) : (
+                <div className='mt-4 space-y-2'>
+                  {evaluations.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className='rounded-lg border border-border/50 bg-white/60 p-3'
+                    >
+                      <div className='flex flex-wrap items-center gap-2'>
+                        <span
+                          className={cn(
+                            'rounded-full border px-2 py-0.5 text-[11px] font-medium capitalize',
+                            outcomeTone(ev.outcome)
+                          )}
+                        >
+                          {ev.outcome || 'unknown'}
+                        </span>
+                        <span className='text-sm font-medium text-brand-navy'>
+                          {ev.policy_name || ev.policy_key || 'Unattributed policy'}
+                        </span>
+                        {ev.subject_ref && (
+                          <span className='font-mono text-xs text-muted-foreground'>
+                            {ev.subject_ref}
+                          </span>
+                        )}
+                        <span className='ml-auto text-[11px] text-muted-foreground'>
+                          {formatRelative(ev.evaluated_at)}
+                        </span>
+                      </div>
+
+                      {ev.reason && (
+                        <p className='mt-1.5 text-xs text-muted-foreground'>
+                          {ev.reason}
+                        </p>
+                      )}
+
+                      <div className='mt-2 flex flex-wrap gap-3 text-[11px] text-muted-foreground'>
+                        {ev.threshold_in_force !== null &&
+                          ev.threshold_in_force !== undefined && (
+                            <span className='font-mono'>
+                              threshold {JSON.stringify(ev.threshold_in_force)}
+                            </span>
+                          )}
+                        {ev.observed_values !== null &&
+                          ev.observed_values !== undefined && (
+                            <span className='font-mono'>
+                              observed {JSON.stringify(ev.observed_values)}
+                            </span>
+                          )}
+                        {ev.workflow_name && <span>{ev.workflow_name}</span>}
+                        {ev.step_name && <span>step “{ev.step_name}”</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
       )}
 
-      {activeTab === 'matrix' && (
-        <motion.div
-          key="matrix-tab"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.15 }}
-        >
-          <PermissionMatrixTab />
+      {tab === 'changes' && (
+        <motion.div variants={itemVariants}>
+          <Card className='relative overflow-hidden'>
+            <CardWatermark opacity={3} scale={1.1} />
+            <CardContent className='relative z-10 p-5'>
+              <h2 className='font-display text-lg font-bold text-brand-navy'>
+                Who changed what
+              </h2>
+              <p className='mt-1 text-sm text-muted-foreground'>
+                Every policy edit, with the value before and after.
+              </p>
+
+              {changes.length === 0 ? (
+                <p className='mt-4 text-sm text-muted-foreground'>
+                  No policy has been changed yet.
+                </p>
+              ) : (
+                <div className='mt-4 space-y-1.5'>
+                  {changes.map((change) => (
+                    <div
+                      key={change.id}
+                      className='flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border/50 bg-white/60 px-3 py-2 text-xs'
+                    >
+                      <span className='font-mono text-brand-navy'>
+                        {change.policy_key}
+                      </span>
+                      <span className='text-muted-foreground'>
+                        {change.field.replace('parameters.', '')}
+                      </span>
+                      <span className='font-mono'>
+                        <span className='text-red-500 line-through'>
+                          {change.old_value ?? '—'}
+                        </span>{' '}
+                        <span className='text-emerald-600'>
+                          {change.new_value ?? '—'}
+                        </span>
+                      </span>
+                      {change.note && (
+                        <span className='text-muted-foreground'>
+                          “{change.note}”
+                        </span>
+                      )}
+                      <span className='ml-auto text-muted-foreground'>
+                        {change.changed_by} · {formatRelative(change.changed_at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </motion.div>
       )}
-      </AnimatePresence>
-
-      {/* Detail Modal - View only */}
-      <PolicyDetailModal
-        policy={selectedPolicy}
-        isOpen={isDetailModalOpen}
-        onClose={() => {
-          setIsDetailModalOpen(false)
-          setSelectedPolicy(null)
-        }}
-        onEdit={handleEditFromDetail}
-        onToggleStatus={(id, isActive) => {
-          togglePolicyStatus(id, isActive)
-          setIsDetailModalOpen(false)
-        }}
-        onDelete={(id) => {
-          deletePolicy(id)
-          setIsDetailModalOpen(false)
-        }}
-      />
-
-      {/* Edit Modal */}
-      <PolicyEditModal
-        policy={editingPolicy}
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false)
-          setEditingPolicy(null)
-        }}
-        onSave={handleSavePolicy}
-      />
     </motion.div>
   )
 }

@@ -1,13 +1,16 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { motion, useInView } from 'framer-motion'
-import apiClient from '@/lib/api-client'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { motion } from 'framer-motion'
+import { Card, CardContent } from '@/components/ui/card'
 import { CardWatermark } from '@/components/ui/card-watermark'
 import { Icons } from '@/components/ui/icons'
-import { ActivityChart } from '@/components/ActivityChart'
+import { AgentActivityChart } from '@/components/agent/AgentActivityChart'
+import { BusinessOutcomes } from '@/components/agent/BusinessOutcomes'
+import { AgentRunsPanel } from '@/components/agent/AgentRunsPanel'
+import { AgentStatusBar } from '@/components/agent/AgentStatusBar'
+import { useAgentData } from '@/hooks/useAgentData'
+import { formatDuration } from '@/lib/agent'
 import { cn } from '@/lib/utils'
 
 // Animation variants
@@ -45,32 +48,52 @@ function AnimatedNumber({
   duration?: number
 }) {
   const [displayValue, setDisplayValue] = useState(0)
-  const ref = useRef<HTMLSpanElement>(null)
-  const isInView = useInView(ref, { once: true, amount: 0.5 })
-  const hasAnimated = useRef(false)
+  // Mirror of displayValue for the animation to read without re-subscribing.
+  const shownRef = useRef(0)
+  shownRef.current = displayValue
 
+  // Two deliberate choices here, both learned the hard way:
+  //
+  // 1. No in-view gate. These cards carry the headline figures. An
+  //    IntersectionObserver that never fires — background tab, non-compositing
+  //    viewport — would leave them showing a zero that reads as real data.
+  // 2. No "already animated" ref guard. React StrictMode double-invokes effects
+  //    in development: the first pass would claim the value, the cleanup would
+  //    cancel its timer, and the second pass would early-return having done
+  //    nothing — pinning the card at zero. Animating from whatever is currently
+  //    shown is idempotent, so a double-invoke is harmless.
   useEffect(() => {
-    if (!isInView || hasAnimated.current) return
-    hasAnimated.current = true
+    const from = shownRef.current
+    if (from === value) return
 
     const startTime = performance.now()
+    let raf = 0
+    let done = false
 
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / duration, 1)
+    const animate = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1)
       const eased = 1 - Math.pow(2, -10 * progress)
-
-      setDisplayValue(Math.round(eased * value))
-
+      setDisplayValue(Math.round(from + eased * (value - from)))
       if (progress < 1) {
-        requestAnimationFrame(animate)
+        raf = requestAnimationFrame(animate)
       } else {
+        done = true
         setDisplayValue(value)
       }
     }
+    raf = requestAnimationFrame(animate)
 
-    requestAnimationFrame(animate)
-  }, [value, duration, isInView])
+    // requestAnimationFrame is paused entirely in background or non-compositing
+    // tabs. The number matters more than the count-up, so land on it regardless.
+    const settle = setTimeout(() => {
+      if (!done) setDisplayValue(value)
+    }, duration + 150)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(settle)
+    }
+  }, [value, duration])
 
   const formatValue = (num: number): string => {
     if (num >= 1000) {
@@ -80,7 +103,7 @@ function AnimatedNumber({
   }
 
   return (
-    <span ref={ref}>
+    <span>
       {formatValue(displayValue)}
       {suffix}
     </span>
@@ -90,12 +113,15 @@ function AnimatedNumber({
 // Stats Card Component with Bento styling
 interface StatCardProps {
   title: string
-  value: number
+  /** Null means "no data yet" — rendered as a dash, never as a zero. */
+  value: number | null
   suffix?: string
   icon: React.ElementType
-  trend?: { value: string; positive: boolean }
+  /** Small line under the number: context, not a fabricated trend. */
+  footnote?: string
   colorClass: string
   delay?: number
+  loading?: boolean
 }
 
 function StatCard({
@@ -103,9 +129,10 @@ function StatCard({
   value,
   suffix = '',
   icon: Icon,
-  trend,
+  footnote,
   colorClass,
   delay = 0,
+  loading = false,
 }: StatCardProps) {
   return (
     <motion.div
@@ -127,28 +154,22 @@ function StatCard({
               </p>
               {/* Display number */}
               <p className='font-display text-[2.25rem] font-bold leading-none tracking-tight text-brand-navy'>
-                <AnimatedNumber value={value} suffix={suffix} />
+                {loading ? (
+                  <span className='text-brand-muted'>…</span>
+                ) : value === null ? (
+                  <span className='text-brand-muted'>—</span>
+                ) : (
+                  <AnimatedNumber value={value} suffix={suffix} />
+                )}
               </p>
-              {/* Trend */}
-              {trend && (
+              {footnote && (
                 <motion.p
-                  className={cn(
-                    'flex items-center gap-1 text-xs font-medium',
-                    trend.positive ? 'text-emerald-600' : 'text-red-500'
-                  )}
+                  className='text-xs font-medium text-muted-foreground'
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: delay + 0.3 }}
                 >
-                  {trend.positive ? (
-                    <Icons.trendingUp className='h-3 w-3' strokeWidth={2} />
-                  ) : (
-                    <Icons.trendingUp
-                      className='h-3 w-3 rotate-180'
-                      strokeWidth={2}
-                    />
-                  )}
-                  {trend.value}
+                  {footnote}
                 </motion.p>
               )}
             </div>
@@ -172,9 +193,7 @@ function StatCard({
 }
 
 // Hero Section
-function HeroSection({ userName }: { userName?: string }) {
-  const firstName = userName?.split(' ')[0] || 'there'
-
+function HeroSection() {
   return (
     <motion.div
       className='col-span-12 py-2'
@@ -183,110 +202,79 @@ function HeroSection({ userName }: { userName?: string }) {
       transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <h1 className='text-display-3 font-bold tracking-tight text-brand-navy lg:text-display-2'>
-        Where Intelligence <br className='hidden sm:block' />
-        <span className='text-gradient'>Meets Human.</span>
+        Service Desk <br className='hidden sm:block' />
+        <span className='text-gradient'>Command Center.</span>
       </h1>
       <p className='mt-4 text-lg font-light text-muted-foreground'>
-        Welcome back, {firstName}. Your AI Command Center is ready.
+        Governing an AI service desk that eliminates problems, not just tickets.
       </p>
     </motion.div>
   )
 }
 
-// Diagnostics Card
-function DiagnosticsCard() {
-  const [apiResponse, setApiResponse] = useState<string>('')
-  const [adminResponse, setAdminResponse] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(false)
-
-  const callApi = async (
-    endpoint: string,
-    setter: React.Dispatch<React.SetStateAction<string>>
-  ) => {
-    setIsLoading(true)
-    setter('Loading...')
-    try {
-      const data = await apiClient(endpoint)
-      setter(JSON.stringify(data, null, 2))
-    } catch (error) {
-      setter(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
-    } finally {
-      setIsLoading(false)
-    }
-  }
+// Operator roster — which agents exist on Auto and how much work each did
+function OperatorBreakdown({
+  metrics,
+  loading,
+}: {
+  metrics: ReturnType<typeof useAgentData>['metrics']
+  loading: boolean
+}) {
+  const rows = metrics?.by_workflow ?? []
 
   return (
     <Card className='relative col-span-12 h-full overflow-hidden'>
       <CardWatermark opacity={3} scale={1.1} />
-      <CardHeader className='relative z-10'>
-        <CardTitle className='flex items-center gap-2'>
-          <Icons.activity
-            className='h-5 w-5 text-brand-cornflower'
-            strokeWidth={1.5}
-          />
-          System Diagnostics
-        </CardTitle>
-      </CardHeader>
-      <CardContent className='relative z-10 space-y-6'>
-        <div className='space-y-3'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm font-medium text-foreground'>
-                Standard Authorization
-              </p>
-              <p className='mt-0.5 font-mono text-xs text-muted-foreground'>
-                /api/test
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={() => callApi('/api/test', setApiResponse)}
-            disabled={isLoading}
-            variant='outline'
-            className='w-full'
-          >
-            {isLoading ? 'Running...' : 'Run Diagnostics'}
-          </Button>
-          {apiResponse && (
-            <div className='rounded-xl border border-border/50 bg-muted/30 p-4'>
-              <pre className='overflow-x-auto font-mono text-xs text-muted-foreground'>
-                <code>{apiResponse}</code>
-              </pre>
-            </div>
-          )}
+      <CardContent className='relative z-10 p-5'>
+        <div className='mb-4'>
+          <h2 className='flex items-center gap-2 font-display text-lg font-bold text-brand-navy'>
+            <Icons.users className='h-5 w-5 text-brand-cornflower' strokeWidth={1.5} />
+            Agent Roster
+          </h2>
+          <p className='mt-1 text-sm text-muted-foreground'>
+            Runs per Orchestrator and Operator, straight from Supervity Auto.
+          </p>
         </div>
 
-        <div className='h-px bg-border/50' />
+        {loading && rows.length === 0 && (
+          <p className='py-4 text-sm text-muted-foreground'>Loading roster…</p>
+        )}
 
-        <div className='space-y-3'>
-          <div className='flex items-center justify-between'>
-            <div>
-              <p className='text-sm font-medium text-foreground'>
-                Admin Verification
-              </p>
-              <p className='mt-0.5 font-mono text-xs text-muted-foreground'>
-                /api/admin/dashboard
-              </p>
-            </div>
-          </div>
-          <Button
-            onClick={() => callApi('/api/admin/dashboard', setAdminResponse)}
-            disabled={isLoading}
-            variant='gradient'
-            className='w-full'
-          >
-            {isLoading ? 'Verifying...' : 'Verify Admin Access'}
-            <Icons.arrowRight className='ml-2 h-4 w-4' />
-          </Button>
-          {adminResponse && (
-            <div className='rounded-xl border border-border/50 bg-muted/30 p-4'>
-              <pre className='overflow-x-auto font-mono text-xs text-muted-foreground'>
-                <code>{adminResponse}</code>
-              </pre>
-            </div>
-          )}
+        {!loading && rows.length === 0 && (
+          <p className='py-4 text-sm text-muted-foreground'>
+            Nothing mirrored yet. Press “Sync from Auto”.
+          </p>
+        )}
+
+        <div className='space-y-2'>
+          {rows.map((row) => {
+            const share = metrics?.total_runs
+              ? Math.round((row.runs / metrics.total_runs) * 100)
+              : 0
+            return (
+              <div key={row.workflow_name} className='space-y-1'>
+                <div className='flex items-center justify-between gap-3 text-sm'>
+                  <span className='min-w-0 flex-1 truncate font-medium text-brand-navy'>
+                    {row.workflow_name}
+                  </span>
+                  <span className='shrink-0 text-xs text-muted-foreground'>
+                    {row.runs} run{row.runs === 1 ? '' : 's'}
+                    {row.failed > 0 && (
+                      <span className='ml-1 text-red-500'>· {row.failed} failed</span>
+                    )}
+                  </span>
+                </div>
+                <div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>
+                  <motion.div
+                    className='h-full rounded-full bg-brand-cornflower'
+                    initial={{ width: 0 }}
+                    animate={{ width: `${share}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                  />
+                </div>
+              </div>
+            )
+          })}
         </div>
       </CardContent>
     </Card>
@@ -295,6 +283,9 @@ function DiagnosticsCard() {
 
 // Main Dashboard — no auth required, renders directly
 export default function HomePage() {
+  const { status, metrics, runs, loading, error, syncing, lastSync, sync } =
+    useAgentData({ pollMs: 30000, runLimit: 25 })
+
   return (
     <motion.div
       className='space-y-6'
@@ -303,57 +294,95 @@ export default function HomePage() {
       animate='visible'
     >
       {/* Hero Section */}
-      <HeroSection userName='Developer' />
+      <HeroSection />
 
-      {/* Stats Grid - Bento style */}
+      {/* Provenance strip — makes it plain these numbers come from Auto */}
+      <motion.div variants={itemVariants}>
+        <AgentStatusBar
+          status={status}
+          lastRunAt={metrics?.last_run_at}
+          syncing={syncing}
+          lastSync={lastSync}
+          error={error}
+          onSync={() => void sync()}
+        />
+      </motion.div>
+
+      {/* Stats Grid — every value computed from real agent runs */}
       <div className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
         <StatCard
-          title='Total Users'
-          value={10400}
-          icon={Icons.users}
-          trend={{ value: '+12%', positive: true }}
+          title='Agent Runs'
+          value={metrics?.total_runs ?? null}
+          icon={Icons.activity}
+          footnote={
+            metrics
+              ? `${metrics.completed_runs} completed · ${metrics.failed_runs} failed`
+              : undefined
+          }
           colorClass='bg-brand-navy'
           delay={0.1}
-        />
-        <StatCard
-          title='Active Sessions'
-          value={524}
-          icon={Icons.activity}
-          trend={{ value: '+8%', positive: true }}
-          colorClass='bg-brand-cornflower'
-          delay={0.2}
+          loading={loading}
         />
         <StatCard
           title='Success Rate'
-          value={98}
+          value={metrics?.success_rate_pct ?? null}
           suffix='%'
           icon={Icons.checkCircle}
-          trend={{ value: '+2%', positive: true }}
+          footnote={
+            metrics?.success_rate_pct === null
+              ? 'no finished runs yet'
+              : 'of all finished runs'
+          }
           colorClass='bg-brand-purple'
-          delay={0.3}
+          delay={0.2}
+          loading={loading}
         />
         <StatCard
-          title='AI Confidence'
-          value={96}
-          suffix='%'
+          title='Avg Run Time'
+          value={metrics?.avg_duration_seconds ?? null}
+          suffix='s'
+          icon={Icons.clock}
+          footnote={
+            metrics?.avg_duration_seconds != null
+              ? formatDuration(Math.round(metrics.avg_duration_seconds))
+              : undefined
+          }
+          colorClass='bg-brand-cornflower'
+          delay={0.3}
+          loading={loading}
+        />
+        <StatCard
+          title='Operators Live'
+          value={metrics?.operator_count ?? null}
           icon={Icons.sparkles}
-          trend={{ value: 'Stable', positive: true }}
+          footnote={
+            metrics
+              ? `+ ${metrics.orchestrator_count} orchestrator${metrics.orchestrator_count === 1 ? '' : 's'}`
+              : undefined
+          }
           colorClass='bg-gradient-to-br from-brand-navy to-brand-purple'
           delay={0.4}
+          loading={loading}
         />
       </div>
 
-      {/* Activity Chart - Full Width */}
+      {/* The judged figures, above the fold */}
       <motion.div variants={itemVariants}>
-        <ActivityChart className='col-span-12' />
+        <BusinessOutcomes />
       </motion.div>
 
-      {/* System Diagnostics */}
-      <motion.div
-        className='grid gap-6 lg:grid-cols-12'
-        variants={itemVariants}
-      >
-        <DiagnosticsCard />
+      {/* Run history from real runs */}
+      <motion.div variants={itemVariants}>
+        <AgentActivityChart runs={runs} />
+      </motion.div>
+
+      {/* Roster + activity timeline */}
+      <motion.div className='grid gap-6 lg:grid-cols-12' variants={itemVariants}>
+        <OperatorBreakdown metrics={metrics} loading={loading} />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <AgentRunsPanel runs={runs} loading={loading} />
       </motion.div>
     </motion.div>
   )

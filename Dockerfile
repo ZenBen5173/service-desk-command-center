@@ -32,6 +32,9 @@ COPY scripts ./scripts/
 COPY start_gunicorn.sh ./
 
 RUN chmod -R 755 /app/*/
+# Strip CRLF line endings. A Windows checkout gives shell scripts \r\n, which
+# makes the container fail with "not found" on the very first line.
+RUN find . -name "*.sh" -exec sed -i 's/\r$//' {} +
 # Make scripts executable
 RUN chmod +x start_gunicorn.sh utils/wait_for_db.py 2>/dev/null || true
 
