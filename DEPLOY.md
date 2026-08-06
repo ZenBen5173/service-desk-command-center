@@ -88,9 +88,9 @@ site — the Elimination Backlog should show your ticket classes.
 | Page | Should show |
 |---|---|
 | `/` | Business outcomes, agent runs, the roster |
-| `/elimination` | 17 ticket classes with proposed fixes |
+| `/elimination` | 15 ticket classes with proposed fixes |
 | `/workbench` | The human queue |
-| `/ai/insights` | 13 insights |
+| `/ai/insights` | 12 insights |
 | `/ai/policies` | 4 policies and the evaluation log |
 | `/data-manager` | 8 integrations |
 

@@ -75,7 +75,7 @@ Every evaluation must be logged and visible in the UI. A threshold edit must vis
 4. Policies UI — editable, persisted, logged.
 5. Workbench queue — exception in, decision out.
 6. Insights + Data Manager.
-7. Rehearse demo, record 3–5 min.
+7. Rehearse demo, record 5–10 min (the Round 2 brief's figure; `DEMO_SCRIPT.md` runs 7).
 
 ## Known platform gotcha (from Round 1)
 Supervity's chat summaries contradicted its own Activity Timeline — it invented ticket numbers, identities and confidence values. Trust the audit log / Activity Timeline, never the natural-language summary. Surface authoritative JSON in the UI.
@@ -86,4 +86,11 @@ Allowed config: runtime inputs, file paths, repo names, thresholds, field mappin
 If a value can't be traced to a real source, fail and escalate — never generate it.
 
 ## Submission
-Public Operator URL · public 3–5 min demo video, no login wall · LinkedIn post with the same video · tag @Supervity and @Vijay Navaluri · #AIEmployees #Supervity #SupervityAI #NoCode #AgenticAI #AutopilotHackathon
+Five deliverables, per `docs/hackathon-brief.md`:
+1. Working application — https://autopilot-frontend-mafd.onrender.com
+2. Orchestrator + ≥5 Operators on Auto — 7 Operators, definitions in `docs/auto-workflows/`
+3. Live demo, 5–10 min — script in `DEMO_SCRIPT.md`
+4. Code repository — https://github.com/ZenBen5173/service-desk-command-center
+5. Architecture diagram — `ARCHITECTURE.md`
+
+Plus: LinkedIn post with the same video · tag @Supervity and @Vijay Navaluri · #AIEmployees #Supervity #SupervityAI #NoCode #AgenticAI #AutopilotHackathon
