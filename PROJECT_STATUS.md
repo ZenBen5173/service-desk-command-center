@@ -21,6 +21,24 @@ Last updated: 6 Aug 2026
 Everyone else closes tickets faster. We make classes of ticket stop existing —
 and we report the number.
 
+## Three things that make this different
+
+**1. Stop the tickets happening at all.** 460 tickets are really 15 root causes.
+75 already collapsed into single incidents, 380 preventable if the proposed fixes
+ship. Reported as two figures, never blended.
+
+**2. Know when to stop.** Four independent refusal reasons in strict precedence,
+none overridable by urgency. 32 tickets held back over ambiguous identity alone,
+one of them Highest priority and already breached.
+
+**3. Never invent a number.** MTTR is blank with the reason printed. Missing
+inputs are named as missing. The chat surface holds no language model, so it
+cannot invent a ticket number — the exact failure Round 1 caught the platform
+itself committing.
+
+Full detail in the README; the panels are at `/elimination`, `/workbench` and
+`/ai/policies`.
+
 ---
 
 ## All five mandatories are met
