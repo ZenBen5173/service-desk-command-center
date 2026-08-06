@@ -44,9 +44,9 @@ Lead with the idea. The architecture comes later.
 
 **Show:** the ranked list. Point at the top three rows.
 
-> "Our agents read four hundred and sixty tickets and found seventeen distinct
-> problems underneath them — down from sixty-seven raw clusters, because the same
-> problem shows up under different wording.
+> "Our agents read four hundred and sixty tickets and found fifteen distinct
+> problems underneath them. Every ticket is accounted for — the same problem just
+> shows up under a dozen different wordings.
 >
 > Number one: shared drive access. Forty-four tickets, eleven of them breached
 > SLA. Number two: printers offline, forty-three tickets, eleven breached."
@@ -60,9 +60,9 @@ Lead with the idea. The architecture comes later.
 
 **Point at the two deflection numbers.**
 
-> "We report deflection as two separate numbers, deliberately. Seventy-one
+> "We report deflection as two separate numbers, deliberately. Seventy-five
 > tickets already collapsed into single incidents — that work is avoided. Three
-> hundred and seventy-seven are preventable if these fixes ship — that's a
+> hundred and eighty are preventable if these fixes ship — that's a
 > forecast, and we label it as one. Blending those into one headline would not
 > survive your first question."
 
@@ -81,7 +81,7 @@ That last line matters. It shows you expected to be challenged.
 
 **Switch to:** the Dashboard, scroll to Agent Activity.
 
-> "Ninety-one runs, ninety-eight percent success. The Command Center never
+> "Ninety-six runs, ninety-eight percent success. The Command Center never
 > decides anything — it reads what the agents did."
 
 **Open one Orchestrator run's timeline. Scroll through the steps.**
@@ -106,7 +106,7 @@ That last line matters. It shows you expected to be challenged.
 
 **Switch to:** AI Policies.
 
-> "Four policies, all editable without code. Eight thousand eight hundred
+> "Four policies, all editable without code. Nine thousand seven hundred
 > evaluations logged."
 
 **Open the evaluation log tab. Point at a blocked row.**
@@ -136,7 +136,7 @@ Reset it to 0.85 afterwards.
 
 **Switch to:** Workbench.
 
-> "A hundred and fifty-seven items are waiting on a person, and they're not a
+> "A hundred and seventy-seven items are waiting on a person, and they're not a
 > pile of failures — they're four different kinds of stop."
 
 **Open a `change approval` item — ITSM-2211.**
@@ -145,12 +145,12 @@ Reset it to 0.85 afterwards.
 > fix. It opened a GitHub issue in the system of record, then stopped, because an
 > open change request outranks its own confidence.
 >
-> Forty-five tickets are sitting here for that reason — including the payroll
+> Fifty tickets are sitting here for that reason — including the payroll
 > outage itself, the biggest incident in the dataset."
 
 **Open a `verification required` item — ITSM-2216.**
 
-> "Twenty-one of these. A change was rolled back, so the agent forced the ticket
+> "Twenty-four of these. A change was rolled back, so the agent forced the ticket
 > back open and demanded verification rather than trusting the original fix."
 
 **Open one of the repeat-failure items — ITSM-2217.**
@@ -172,7 +172,7 @@ Reset it to 0.85 afterwards.
 
 **Switch to:** AI Insights.
 
-> "Thirteen insights, none of them written by us — recurring problems, incidents
+> "Twelve insights, none of them written by us — recurring problems, incidents
 > forming, knowledge gaps, an SLA breach forecast, and where the load falls."
 
 **Open the payroll major-incident card.**
@@ -181,10 +181,11 @@ Reset it to 0.85 afterwards.
 > different languages. The clustering that recognised those as the same problem
 > ran inside the Correlator on Auto. This page ranks it and names the run."
 
-**Open the team-load insight.**
+**Open the SLA breach forecast.**
 
-> "IAM Team carries thirty percent of all classified volume. That's where the
-> work falls before any of the permanent fixes ship."
+> "Fifty tickets already breached, measured on each region's real working
+> calendar rather than raw elapsed time. Thirty-seven of them never got a first
+> response at all — and the agent counts that as a signal, not a blank."
 
 **Open the AI Manager. Click "What can we prevent?"**
 
@@ -246,15 +247,15 @@ Reset it to 0.85 afterwards.
 | Figure | Value |
 |---|---|
 | Operators on Auto | 7, plus 1 Orchestrator |
-| Agent runs | 91 · 97.8% success |
-| Ticket classes found | 17, from 460 tickets |
-| Raw clusters consolidated | 67 → 17 |
-| Collapsed now | 71 tickets |
-| Preventable | 377 tickets |
+| Agent runs | 96 · 97.8% success |
+| Ticket classes found | 15, covering all 460 tickets |
+| Awaiting human approval | 5 classes |
+| Collapsed now | 75 tickets |
+| Preventable | 380 tickets |
 | Knowledge articles drafted | 8, awaiting approval |
-| Policy evaluations logged | 8,822 |
-| Insights | 13 — 6 critical, 6 warning, 1 info |
-| Workbench | 159 items — 45 change approval, 21 verification, 90 class, 3 repeat-failure |
+| Policy evaluations logged | 9,752 |
+| Insights | 12 — 6 critical, 6 warning |
+| Workbench | 177 open |
 | Integrations | 8 across 8 categories |
 | SLA on business hours | 428 of 460 (93%) |
 | CSAT | 3.67 / 5 from 76 responses |

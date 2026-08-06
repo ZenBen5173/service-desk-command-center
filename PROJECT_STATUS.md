@@ -3,8 +3,9 @@
 Service Desk Command Center · Autopilot Asia 2026 · Track 3, Customer Support
 Last updated: 6 Aug 2026
 
-**Live demo:** run locally at http://localhost:3001 — the public tunnel is
-blocked on the current network (see Open items).
+**Live demo:** https://autopilot-frontend-mafd.onrender.com
+**Repository:** https://github.com/ZenBen5173/service-desk-command-center
+**Architecture:** `ARCHITECTURE.md`
 
 ---
 
@@ -20,9 +21,9 @@ and we report the number.
 | # | Requirement | Status | Evidence |
 |---|---|---|---|
 | 1 | Orchestrator + ≥5 Operators on Auto | ✅ | **7 Operators + 1 Orchestrator**, parallel start, three-way branch, human gates |
-| 2 | Command Center on live agent data | ✅ | 91 real runs, 97.8% success — no template demo data left anywhere |
-| 3 | ≥3 editable policies, every evaluation logged | ✅ | **4 policies · 8,822 evaluations**, each naming the rule, the threshold in force and what it was compared against |
-| 4 | Live exception resolved in the Workbench | ✅ | **157 open**, decisions recorded against the agent's own recommendation |
+| 2 | Command Center on live agent data | ✅ | 96 real runs, 97.8% success — no template demo data left anywhere |
+| 3 | ≥3 editable policies, every evaluation logged | ✅ | **4 policies · 9,752 evaluations**, each naming the rule, the threshold in force and what it was compared against |
+| 4 | Live exception resolved in the Workbench | ✅ | **177 open**, decisions recorded against the agent's own recommendation |
 | 5 | ≥3 integrations across 2 categories | ✅ | **8 integrations across 8 categories**, discovered from Auto rather than declared |
 
 ## Every component the brief asks for is built
@@ -33,7 +34,7 @@ The problem statement lists six things to build, not just the five mandatories:
 |---|---|
 | Command Center | ✅ Live KPIs, agent roster, run timeline with the authoritative JSON |
 | AI Policies | ✅ 4 editable rules, full change history and evaluation log |
-| AI Insights | ✅ 13 real insights across all five categories the brief names |
+| AI Insights | ✅ 12 real insights — clusters, incidents, gaps, SLA forecast |
 | AI Manager | ✅ Chat answering from mirrored agent data, every answer cited |
 | Data Manager | ✅ 8 integrations, health probed or inferred and labelled as which |
 | Workbench | ✅ Exceptions with full context, approve / reject / modify / more info |
@@ -77,17 +78,17 @@ inside the change-control and escalation branches.
 The Elimination Backlog ranks *classes* of ticket by what they cost, and shows
 the permanent fix an Operator proposed for each.
 
-**17 distinct problems covering all 460 actionable tickets**, consolidated from
-67 raw clusters:
+**15 distinct problems covering all 460 actionable tickets**, five of them
+already awaiting human approval:
 
 | Rank | Problem | Tickets | Breached |
 |---|---|---|---|
 | 1 | Shared-drive access and permissions | 44 | 11 |
 | 2 | Network printers offline | 43 | 11 |
-| 3 | Guest wifi connectivity and authentication | 40 | 10 |
-| 4 | Software installation requests | 40 | 7 |
-| 5 | Password resets | 37 | 11 |
-| 6 | Workstation performance degradation | 38 | 7 |
+| 3 | Mailbox storage limits | 43 | 7 |
+| 4 | Guest wifi connectivity | 40 | 10 |
+| 5 | Software installation requests | 40 | 7 |
+| 6 | Password resets | 37 | 11 |
 
 Each carries a proposed permanent fix — group-based access control with a
 self-service portal, static DHCP reservations for printers, automated mailbox
@@ -95,9 +96,9 @@ archiving — plus the owning team.
 
 **Deflection is reported as two separate numbers, never blended:**
 
-- **Collapsed now — 71 tickets** — shared one root cause, became a single
+- **Collapsed now — 75 tickets** — shared one root cause, became a single
   incident with one response. Already avoided.
-- **Preventable — 377 tickets** — targeted by the 8 proposed permanent fixes.
+- **Preventable — 380 tickets** — targeted by the proposed permanent fixes.
   A forecast, conditional on a human approving each one.
 
 Blending those into one headline would not survive a judge's first question.
@@ -112,7 +113,7 @@ Blending those into one headline would not survive a judge's first question.
 | SLA on business hours | 428 of 460 (93%) | Ticket Queue Triage |
 | Auto-resolution | see Open items | Evidence and Policy |
 | MTTR | **not shown, by choice** | — |
-| Deflection | 71 collapsed · 377 preventable | Major-Incident Correlator |
+| Deflection | 75 collapsed · 380 preventable | Major-Incident Correlator |
 
 MTTR is deliberately absent with the reason printed on the dashboard: no
 Operator reports resolution timestamps, and this repo does not compute metrics
@@ -151,7 +152,7 @@ with no confidence score, all counted and reported.
 | `/workbench` | Human-in-the-loop queue. Approve / reject / modify / more info |
 | `/data-manager` | 8 integrations with live health |
 | `/ai/policies` | 4 editable policies, the evaluation log, the change history |
-| `/ai/insights` | 13 insights — clusters, incidents, gaps, SLA forecast, team load |
+| `/ai/insights` | 12 insights — clusters, incidents, gaps, SLA forecast |
 | AI Manager | Chat over the operation, every answer cited to an Operator |
 
 ---
@@ -186,8 +187,8 @@ with the same schema.
 
 | Item | Priority | Notes |
 |---|---|---|
-| Public URL | **High** | Cloudflare tunnel cannot reach port 7844 from inside Docker on the current network. Port is open from the host, so running the tunnel outside Docker, or a different network, should fix it |
-| Demo video | **High** | 3–5 min, public, no login wall |
+| Public URL | ✅ done | https://autopilot-frontend-mafd.onrender.com — free tier sleeps after 15 min idle, so open it shortly before judging |
+| Demo video | **High** | 5–10 min per the brief; `DEMO_SCRIPT.md` runs 7 |
 | LinkedIn post | **High** | Same video, tag @Supervity and @Vijay Navaluri |
 | End-to-end auto-resolution | Known gap | The agent decides a ticket is safe (ALLOW at 0.99 standalone) but Auto returns an empty payload from that Operator to the Orchestrator, so batch tickets escalate on the confidence gate instead. Four attempts, three approaches. Two of three escalations in the last cycle were correct policy behaviour regardless |
 | Ghost Run | Not started | Replay decisions against the historical backlog. Time went into Operator correctness instead |
