@@ -87,6 +87,10 @@ more work for a general audience.
 > Every decision it makes is logged and auditable. Where it could not measure
 > something honestly, it left the number blank rather than estimating one.
 >
+> None of this was a solo effort. Thevesh A/L Chandran has been building this
+> with me since round one, and most of what actually works came out of us
+> disagreeing about it first. Grateful to have had someone to argue with at 2am.
+>
 > An agent that acts fast is easy to build. One that stops is the one you would
 > actually let near your company.
 >
@@ -145,5 +149,7 @@ second and the gap between 460 and 15 does the rest.
 - **Consider leaving the live URL out of the post itself.** `AUTH_BYPASS=true`
   means anyone with the link can edit policies. Put it in the submission form,
   and add it as a comment afterwards only if you want it public.
-- **Reply to your own post within the first hour** — one comment adding a detail
+- **Reply to your own post within the first hour.** One comment adding a detail
   (the four-language incident, say) meaningfully extends reach.
+- **Tag Thevesh with the `@` picker too**, so the thank-you actually reaches him
+  and shows on his profile. Typed text does not.
