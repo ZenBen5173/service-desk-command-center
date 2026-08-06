@@ -71,7 +71,7 @@ more work for a general audience.
 > It stopped because two employees share the same display name and it could not
 > tell which of them had raised it. Fixing the wrong person's laptop to hit a
 > deadline is not a win. So it handed the ticket to a human with the evidence
-> attached, and waited. Thirty two tickets were held back for that same reason.
+> attached, and waited. 32 tickets were held back for that same reason.
 >
 > That restraint is the entire design. The hard part of giving software real
 > responsibility was never how much it can do on its own. It is whether it knows
@@ -79,11 +79,10 @@ more work for a general audience.
 > confidently.
 >
 > The rest of the build follows from the same instinct. Rather than closing
-> tickets faster, it asks which problems keep producing them. Four hundred and
-> sixty tickets turned out to be fifteen actual root causes, each with a proposed
-> permanent fix and the team who owns it. Three hundred and eighty of those
-> tickets are preventable. They do not need resolving, because they do not need
-> to happen.
+> tickets faster, it asks which problems keep producing them. 460 tickets turned
+> out to be 15 actual root causes, each with a proposed permanent fix and the
+> team who owns it. 380 of those tickets are preventable. They do not need
+> resolving, because they do not need to happen.
 >
 > Every decision it makes is logged and auditable. Where it could not measure
 > something honestly, it left the number blank rather than estimating one.
