@@ -7,39 +7,29 @@ Render instead, on a URL that survives the night.
 
 Everything below is on Render's free tier. No card needed.
 
-**Time:** about 40 minutes, most of it waiting for builds.
+**Time:** about 30 minutes, most of it waiting for builds.
 
 ---
 
 ## Before you start
 
-You need a GitHub account and a Render account (sign in with GitHub — one
-click). Have your Supervity API key to hand; it goes in by typing, never in the
-repo.
+You need a Render account — sign in with GitHub, one click. Have your Supervity
+API key to hand; it goes in by typing, never in the repo.
 
 ---
 
-## 1 · Put the code in your own GitHub repo
+## 1 · The code is already on GitHub ✅
 
-The `origin` remote currently points at the template
-(`digitamizers/AutoPilot-Template`) — you can't push there.
+**https://github.com/ZenBen5173/service-desk-command-center** — public, and
+`render.yaml` is in the root where Render expects it.
 
-Create an empty repo on GitHub (private is fine), then:
-
-```bash
-git remote set-url origin https://github.com/YOUR-USERNAME/YOUR-REPO.git
-git add -A
-git commit -m "Round 2 Command Center"
-git push -u origin HEAD
-```
-
-**Check before pushing:** `git status` must not list `.env`. It is gitignored,
-so it shouldn't — but your Supervity key is in that file, and a key in a repo is
-a key you have to rotate.
+`.env` is gitignored, so the Supervity key is not in the repo. If you push more
+work later, keep it that way: run `git status` and confirm `.env` is absent
+before committing. A key in a public repo is a key you have to rotate.
 
 ## 2 · Point Render at the repo
 
-Render dashboard → **New** → **Blueprint** → pick your repo.
+Render dashboard → **New** → **Blueprint** → pick `service-desk-command-center`.
 
 It reads `render.yaml` and offers to create three things:
 
@@ -79,12 +69,12 @@ placeholders:
 |---|---|
 | `FRONTEND_URL` | the frontend's URL (this is the CORS allowlist) |
 
-Save. Both services redeploy automatically.
+No trailing slashes. Save — both services redeploy automatically.
 
 ## 5 · Load the agent data
 
-The new database starts empty — the schema is created by migrations, but no
-agent runs have been mirrored into it yet. Pull them from Supervity Auto:
+The new database starts empty. Migrations create the schema, but no agent runs
+have been mirrored into it yet. Pull them from Supervity Auto:
 
 ```bash
 curl -X POST "https://YOUR-FRONTEND.onrender.com/api/agent/sync?timeline_limit=60"
@@ -104,6 +94,9 @@ site — the Elimination Backlog should show your ticket classes.
 | `/ai/policies` | 4 policies and the evaluation log |
 | `/data-manager` | 8 integrations |
 
+If the numbers differ from your local instance, the sync in step 5 hasn't
+finished — run it again and wait.
+
 ---
 
 ## Two things to know about the free tier
@@ -121,10 +114,10 @@ it if this outlives the hackathon.
 
 `AUTH_BYPASS=true` is set on purpose: the brief requires a demo with no login
 wall. It means anyone who has the URL can also edit policies and clear Workbench
-items — not just read.
+items — not just read them.
 
-That is an accepted tradeoff for a judged demo, not a mistake. Keep the link to
-the submission, and don't post it anywhere it will be crawled.
+That is an accepted tradeoff for a judged demo, not an oversight. Keep the link
+to the submission, and don't post it anywhere it will be crawled.
 
 ## If a build fails
 
@@ -134,3 +127,27 @@ the submission, and don't post it anywhere it will be crawled.
   missing. It must be the backend's full `https://` URL, no trailing slash.
 - **Pages 404** — the frontend deployed the dev stage. The Dockerfile's last
   stage is `prod`, which Render uses by default; don't set a target.
+- **`sqlalchemy.exc.NoSuchModuleError: postgres`** — an older checkout. The
+  current `app/core/database.py` rewrites the `postgres://` scheme that managed
+  providers hand out; make sure Render is building the latest commit.
+
+---
+
+## Meanwhile: the quick tunnel
+
+Still fine for testing and for recording, and it needs no account. From the
+repo root, with the stack running:
+
+```bash
+docker run -d --name qtunnel --network autopilot-template_app-network cloudflare/cloudflared:latest tunnel --no-autoupdate --url http://frontend:3000
+```
+
+Then read the address out of the logs:
+
+```bash
+docker logs qtunnel 2>&1 | grep -o 'https://.*trycloudflare.com'
+```
+
+Note the network name — `autopilot-template_app-network`, not `_default`. An
+earlier attempt failed for a while purely because of that, and the error it
+gives you points at a firewall instead.
