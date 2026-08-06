@@ -18,7 +18,12 @@ const nextConfig: NextConfig = {
     // browser that was not on this machine called its own localhost:8001 and
     // every panel rendered empty.
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8001',
-    INTERNAL_API_URL: process.env.INTERNAL_API_URL || 'http://backend:8000',
+    // INTERNAL_API_URL is deliberately NOT listed here. Next inlines every
+    // entry in this block at build time, so naming it would compile the
+    // rewrite below down to whatever the value was during `npm run build` —
+    // on a hosted deploy that is the docker-compose fallback, and no runtime
+    // environment variable can override a baked-in string. It is server-side
+    // only, so it never needed exposing to the client anyway.
   },
   serverExternalPackages: [],
 
