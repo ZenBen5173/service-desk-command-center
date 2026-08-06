@@ -91,6 +91,12 @@ more work for a general audience.
 > with me since round one, and most of what actually works came out of us
 > disagreeing about it first. Grateful to have had someone to argue with at 2am.
 >
+> Thanks to Vijay Navaluri and the Supervity team for running Autopilot Asia, and
+> for a problem statement with real teeth in it. The dataset had duplicate names,
+> four date formats and a major incident hiding inside 25 separate tickets. We
+> learned more from what it refused to make easy than from anything we got right
+> first time.
+>
 > An agent that acts fast is easy to build. One that stops is the one you would
 > actually let near your company.
 >
@@ -143,8 +149,9 @@ second and the gap between 460 and 15 does the rest.
 
 - **Attach the video directly.** Native uploads outreach link posts substantially;
   don't put a YouTube link in the body.
-- **Tag @Supervity and @Vijay Navaluri** using LinkedIn's `@` picker so they
-  resolve to real profiles — typed text doesn't notify anyone.
+- **Tag with the `@` picker, not typed text.** Three tags: Vijay Navaluri in the
+  thanks paragraph, Supervity where the platform is first named, and Thevesh in
+  his own line. Typed names notify nobody and do not link.
 - **Hashtags at the very end**, after the sign-off.
 - **Consider leaving the live URL out of the post itself.** `AUTH_BYPASS=true`
   means anyone with the link can edit policies. Put it in the submission form,
