@@ -305,3 +305,21 @@ deployment/prod.env
 
 keycloak_convert/
 keycloak_convert.zip
+
+# --- Round 2 Command Center -------------------------------------
+# Built archives of the Auto workflow exports. The JSON in docs/auto-workflows/
+# is the shared artefact; a tarball goes stale the moment a workflow changes.
+docs/auto-workflows.tar.gz
+docs/auto-workflows.zip
+
+# Local Docker volumes
+postgres_data/
+document_storage/
+
+# The organisers' dataset pack. Large, not ours to redistribute, and the hidden
+# judging set has the same schema, so nothing here should be relied on anyway.
+drive-download-*/
+
+# Scratch
+*.tmp
+*.orig
