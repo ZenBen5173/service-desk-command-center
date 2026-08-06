@@ -8,9 +8,8 @@ Last updated: 6 Aug 2026
 **Architecture** · `ARCHITECTURE.md` · **Demo script** · `DEMO_SCRIPT.md`
 
 > **Where we are:** the application is built, deployed and running on live agent
-> data. Four of five mandatories are closed and four of five deliverables are
-> done. What is left is the recording, the LinkedIn post, and one human decision
-> recorded in the Workbench on the deployed site.
+> data. All five mandatories are met and four of five deliverables are done. What
+> is left is recording the demo and posting it.
 >
 > The free hosting tier idles after 15 minutes, so the first visit takes about a
 > minute to wake. Open the link a few minutes before showing it to anyone.
@@ -24,14 +23,14 @@ and we report the number.
 
 ---
 
-## Mandatories
+## All five mandatories are met
 
 | # | Requirement | Status | Evidence |
 |---|---|---|---|
 | 1 | Orchestrator + ≥5 Operators on Auto | ✅ | **7 Operators + 1 Orchestrator**, parallel start, three-way branch, human gates |
 | 2 | Command Center on live agent data | ✅ | 96 real runs, 97.8% success — no template demo data left anywhere |
 | 3 | ≥3 editable policies, every evaluation logged | ✅ | **4 policies · 9,752 evaluations**, each naming the rule, the threshold in force and what it was compared against |
-| 4 | Live exception resolved in the Workbench | ⚠️ | **177 open** across 4 stop reasons, each with the evidence that stopped the agent. **Nothing resolved yet on the deployed instance** — one decision needs making there, see Open items |
+| 4 | Live exception resolved in the Workbench | ✅ | **176 open** across 4 stop reasons, each with the evidence that stopped the agent. ITSM-2212 resolved on the deployed instance: the block was upheld because the change request is still open with CAB, with the reason on the record |
 | 5 | ≥3 integrations across 2 categories | ✅ | **8 integrations across 8 categories**, discovered from Auto rather than declared |
 
 ## The five deliverables
@@ -42,7 +41,7 @@ and we report the number.
 |---|---|---|
 | 1 | Working application | ✅ https://autopilot-frontend-mafd.onrender.com |
 | 2 | Orchestrator + ≥5 Operators on Auto | ✅ 7 Operators; definitions exported to `docs/auto-workflows/` |
-| 3 | Live demo, 5–10 min | ⬜ not recorded — script in `DEMO_SCRIPT.md` runs 7 |
+| 3 | Live demo, 5–10 min | ⬜ not recorded — script in `DEMO_SCRIPT.md` runs 7. Likely presented on site; record it anyway for the LinkedIn post and as a fallback |
 | 4 | Code repository, clean and documented | ✅ https://github.com/ZenBen5173/service-desk-command-center |
 | 5 | Architecture diagram | ✅ `ARCHITECTURE.md` — four diagrams |
 
@@ -210,12 +209,11 @@ with the same schema.
 | Public URL | ✅ done | https://autopilot-frontend-mafd.onrender.com — free tier sleeps after 15 min idle, so open it shortly before judging |
 | Demo video | **High** | 5–10 min per the brief; `DEMO_SCRIPT.md` runs 7 |
 | LinkedIn post | **High** | Three drafts ready in `LINKEDIN_POST.md`; same video, tag @Supervity and @Vijay Navaluri |
-| Resolve one Workbench item | **High** | On the deployed site, not locally. Mandatory 4 wants a decision on the record, and it should be a real one |
+| Resolve one Workbench item | ✅ done | ITSM-2212 rejected on the deployed site, reason recorded |
 | End-to-end auto-resolution | Known gap | The agent decides a ticket is safe (ALLOW at 0.99 standalone) but Auto returns an empty payload from that Operator to the Orchestrator, so batch tickets escalate on the confidence gate instead. Four attempts, three approaches. Two of three escalations in the last cycle were correct policy behaviour regardless |
 | Ghost Run | Not started | Replay decisions against the historical backlog. Time went into Operator correctness instead |
 
-Four of five mandatories are closed. The fifth needs one human decision recorded
-on the deployed instance — a minute's work, not a build task.
+All five mandatories are met on the deployed instance, not just locally.
 
 ---
 
