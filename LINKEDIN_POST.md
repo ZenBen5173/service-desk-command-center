@@ -9,7 +9,7 @@ Pick one, paste, attach the video.
 
 ---
 
-## Option A — the contrarian claim
+## Option A, the contrarian claim
 
 > Every AI service desk demo brags about closing tickets faster.
 >
@@ -25,14 +25,14 @@ Pick one, paste, attach the video.
 > one it proposes the permanent fix, names the team that owns it, and hands it to
 > a human to approve.
 >
-> The number we'd ask you to judge us on isn't resolution time. It's 380 —
+> The number we'd ask you to judge us on isn't resolution time. It's 380:
 > tickets that don't need resolving, because they don't need to happen.
 >
 > Built on @Supervity Auto: one Orchestrator, seven Operators, 9,752 policy
 > evaluations logged, and an agent that stops when it isn't sure.
 >
 > My favourite moment: it refused to touch a Highest-priority ticket that had
-> already breached SLA — because two employees share a display name and it
+> already breached SLA, because two employees share a display name and it
 > wouldn't guess which person it was.
 >
 > That's the system I'd want running my service desk. Not the one that acts
@@ -40,61 +40,75 @@ Pick one, paste, attach the video.
 >
 > #AIEmployees #Supervity #SupervityAI #NoCode #AgenticAI #AutopilotHackathon
 
-**Why it works:** line one names the thing everyone else is proud of; line two
+**Why it works:** line one names the thing everyone else is proud of, line two
 takes it away. That tension is the whole click.
+
+**Note:** assumes the reader knows what a service desk demo is. Option B does
+more work for a general audience.
 
 ---
 
-## Option B — the refusal *(recommended)*
+## Option B, the refusal *(recommended)*
 
 > Our AI agent refused to fix a ticket today. That was the best thing it did all
 > week.
 >
-> Some context: we're competing in the Autopilot Asia hackathon, building what
-> Supervity calls an AI Employee — not a chatbot, but an agent that actually runs
-> a business process end to end. Ours runs an IT service desk: it reads incoming
-> tickets, diagnoses them, fixes what it safely can, and escalates the rest.
+> Everyone has waited on an IT ticket. Most people have raised the same one
+> twice. It is one of those quietly expensive problems every company has and
+> nobody owns, which makes it a good test of whether AI agents can do real work
+> or only demo well.
+>
+> That is what we spent this month finding out. We're competing in the Autopilot
+> Asia hackathon, building on Supervity, a platform for what they call AI
+> Employees: agents that run a business process end to end rather than answering
+> questions about it. Ours runs an IT service desk. It reads incoming tickets,
+> works out what is wrong, fixes what it safely can, and passes the rest to a
+> person.
 >
 > The ticket it refused was the highest priority in the queue and already past
 > its deadline. Every incentive said act.
 >
-> It stopped because two employees in the company share the same display name,
-> and it couldn't tell which of them had raised it. Fixing the wrong person's
-> laptop to hit a target isn't a win. So it handed the ticket to a human with the
-> evidence attached and waited. Thirty-two tickets were held back for exactly
-> that reason.
+> It stopped because two employees share the same display name and it could not
+> tell which of them had raised it. Fixing the wrong person's laptop to hit a
+> deadline is not a win. So it handed the ticket to a human with the evidence
+> attached, and waited. Thirty two tickets were held back for that same reason.
 >
-> That restraint is the whole design. The interesting question in agentic AI
-> isn't how much a system can do on its own — it's whether it knows where its own
-> judgement runs out.
+> That restraint is the entire design. The hard part of giving software real
+> responsibility was never how much it can do on its own. It is whether it knows
+> where its own judgement runs out, and stops there instead of guessing
+> confidently.
 >
-> The rest of what we built follows from the same instinct. Instead of closing
-> tickets faster, it works out which problems keep generating them: 460 tickets
-> collapsed into 15 actual root causes, each with a proposed permanent fix and
-> the team that owns it. 380 of those tickets are preventable — they don't need
-> resolving, because they don't need to happen.
+> The rest of the build follows from the same instinct. Rather than closing
+> tickets faster, it asks which problems keep producing them. Four hundred and
+> sixty tickets turned out to be fifteen actual root causes, each with a proposed
+> permanent fix and the team who owns it. Three hundred and eighty of those
+> tickets are preventable. They do not need resolving, because they do not need
+> to happen.
 >
-> One orchestrator agent, seven specialists, every decision logged and auditable.
-> And where it couldn't measure something honestly, it left the number blank
-> rather than estimating one.
+> Every decision it makes is logged and auditable. Where it could not measure
+> something honestly, it left the number blank rather than estimating one.
 >
-> An agent that acts fast is easy to build. One that stops is the one you'd
-> actually deploy.
+> An agent that acts fast is easy to build. One that stops is the one you would
+> actually let near your company.
 >
 > #AIEmployees #Supervity #SupervityAI #NoCode #AgenticAI #AutopilotHackathon
 
-**Why it works:** "refused" lands in the first four words, and the second
-sentence tells you it was deliberate — so a cold reader knows this is a design
-story, not a failure story, before the fold. Paragraph two explains Supervity,
-the hackathon and what an AI Employee is in three lines, without slowing the
-hook.
+**Why it works:** "refused" lands in the first four words, and the next sentence
+signals it was deliberate, so a cold reader knows this is a design story rather
+than a failure story before the fold. Paragraph two gives anyone a reason to care
+before any product name appears: waiting on IT is universal, and it frames the
+whole thing as a test of whether agents can do real work. Only then does it
+explain Supervity and the competition.
 
-**If you want it shorter,** cut the "One orchestrator, seven specialists"
-paragraph. It's the most technical and the least necessary.
+**No em dashes**, per request. Commas and full stops throughout.
+
+**If you want it shorter,** cut the "Every decision it makes is logged" paragraph
+first, then the "Rather than closing tickets faster" one. Losing the second costs
+you the differentiator, so cut it only if length is genuinely a problem.
 
 ---
 
-## Option C — the number *(shortest, punchiest)*
+## Option C, the number *(shortest)*
 
 > 460 tickets. 15 actual problems.
 >
@@ -102,12 +116,12 @@ paragraph. It's the most technical and the least necessary.
 >
 > For Autopilot Asia 2026 we built an AI Employee for an IT service desk that
 > works on the problems, not the queue. It clusters tickets by root cause across
-> weeks, ranks each class by what it really costs, and proposes the permanent fix
-> — then waits for a human to approve it.
+> weeks, ranks each class by what it really costs, and proposes the permanent
+> fix, then waits for a human to approve it.
 >
 > 75 tickets already collapsed into single incidents. 380 more preventable if
-> those fixes ship. We report those as two separate numbers, deliberately —
-> blending them would make a better headline and a worse answer.
+> those fixes ship. We report those as two separate numbers, deliberately.
+> Blending them would make a better headline and a worse answer.
 >
 > One Orchestrator, seven Operators on @Supervity Auto, 9,752 policy evaluations
 > logged, and MTTR left deliberately blank because no agent reported the
