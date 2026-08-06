@@ -5,6 +5,11 @@ the full flow: trigger → Orchestrator → delegation → policies enforced →
 exception → human resolves → insights. This script covers all seven beats and
 lands around 7:00, leaving room to breathe.
 
+**Slides:** `docs/demo-deck.html`. Open it in a browser and press **F** for
+fullscreen. Arrow keys to advance, **O** for a jump-to grid if a judge asks you to
+go back. It runs to slide 10 and then hands over to the live app, so the deck
+frames the argument and the product proves it.
+
 **Before you hit record**
 
 - Open seven tabs in order: Elimination · Dashboard · AI Insights · AI Policies ·

@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service Desk Command Center — Autopilot Asia 2026</title>
+
+<!--
+  Presentation deck for the Round 2 finals.
+
+  Deliberately a single self-contained file: this gets presented on a venue
+  laptop, possibly with no network, so it must open from disk and work. The
+  Google Fonts link is the one external reference and it degrades to the system
+  stack if it fails, which is why every font-family below names fallbacks.
+
+  Palette and type are lifted from the app's own tokens (frontend/src/app/
+  globals.css) so the slides and the live product read as one thing on screen.
+
+  Navigation: arrow keys, space, or click. Press F for fullscreen, O for an
+  overview grid. Slide numbers are in the corner for the presenter.
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;600;800&family=Geologica:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    /* Straight from the app's globals.css */
+    --navy:#141A42;
+    --cornflower:#8AA2DF;
+    --purple:#5A64A3;
+    --border:#E8EBF2;
+    --muted:#F4F5F9;
+    --muted-fg:#6B7391;
+    --white:#FFFFFF;
+    --radius:0.75rem;
+
+    --display:'Funnel Display', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --body:'Geologica', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  html,body{height:100%;overflow:hidden;background:var(--navy)}
+
+  body{
+    font-family:var(--body);
+    color:var(--navy);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* --- Slide frame ------------------------------------------------------ */
+  .deck{position:relative;width:100vw;height:100vh}
+
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    padding:6vh 8vw;
+    background:var(--white);
+    opacity:0;
+    transition:opacity .28s ease;
+  }
+  .slide.active{display:flex;opacity:1}
+
+  /* Dark slides carry the section breaks and the close, so the deck has a
+     rhythm rather than twenty identical white rectangles. */
+  .slide.dark{background:var(--navy);color:var(--white)}
+  .slide.dark .eyebrow{color:var(--cornflower)}
+  .slide.dark .rule{background:rgba(255,255,255,.18)}
+
+  /* The app watermarks its cards with a faint mark; same idea here. */
+  .slide::after{
+    content:'';
+    position:absolute;right:-6vw;bottom:-10vh;
+    width:46vh;height:46vh;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, var(--cornflower), transparent 62%);
+    opacity:.10;pointer-events:none;
+  }
+  .slide.dark::after{opacity:.16}
+
+  /* --- Type ------------------------------------------------------------- */
+  .eyebrow{
+    font-family:var(--body);
+    font-size:.78rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted-fg);margin-bottom:1.6vh;
+  }
+
+  h1{
+    font-family:var(--display);
+    font-size:clamp(2.6rem,6.4vw,5.4rem);font-weight:800;line-height:1.02;
+    letter-spacing:-.025em;
+  }
+  h2{
+    font-family:var(--display);
+    font-size:clamp(2rem,4.4vw,3.6rem);font-weight:800;line-height:1.06;
+    letter-spacing:-.02em;margin-bottom:2.4vh;
+  }
+  h3{
+    font-family:var(--display);
+    font-size:clamp(1.2rem,2.1vw,1.75rem);font-weight:600;line-height:1.2;
+    margin-bottom:.8vh;
+  }
+
+  p{
+    font-size:clamp(1rem,1.55vw,1.4rem);font-weight:300;line-height:1.55;
+    max-width:58ch;color:var(--muted-fg);
+  }
+  .slide.dark p{color:rgba(255,255,255,.72)}
+  p strong{font-weight:500;color:var(--navy)}
+  .slide.dark p strong{color:var(--white)}
+
+  .lead{font-size:clamp(1.1rem,2vw,1.7rem);font-weight:300;color:var(--navy);max-width:52ch}
+  .slide.dark .lead{color:rgba(255,255,255,.88)}
+
+  .gradient{
+    background:linear-gradient(100deg,var(--navy),var(--purple),var(--cornflower));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+
+  .rule{width:64px;height:3px;background:var(--cornflower);border-radius:2px;margin:2.4vh 0}
+
+  /* --- Stat rows -------------------------------------------------------- */
+  .stats{display:flex;gap:5vw;flex-wrap:wrap;margin-top:3.4vh}
+  .stat .n{
+    font-family:var(--display);
+    font-size:clamp(2.4rem,5.4vw,4.4rem);font-weight:800;line-height:1;
+    letter-spacing:-.03em;color:var(--navy);
+  }
+  .slide.dark .stat .n{color:var(--white)}
+  .stat .n.accent{color:var(--cornflower)}
+  .stat .l{
+    font-size:.82rem;font-weight:500;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--muted-fg);margin-top:.9vh;
+  }
+  .slide.dark .stat .l{color:rgba(255,255,255,.55)}
+
+  /* --- Cards ------------------------------------------------------------ */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.6vw;margin-top:3.4vh}
+  .card{
+    background:var(--muted);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:2.6vh 1.8vw;
+  }
+  .card .num{
+    font-family:var(--display);font-size:1.05rem;font-weight:800;
+    color:var(--cornflower);margin-bottom:1vh;
+  }
+  .card p{font-size:clamp(.85rem,1.05vw,1rem);line-height:1.5}
+
+  /* --- Quote / example -------------------------------------------------- */
+  .quote{
+    border-left:3px solid var(--cornflower);
+    padding:1.6vh 0 1.6vh 1.6vw;
+    margin:2.6vh 0;
+    max-width:62ch;
+  }
+  .quote p{font-style:italic;color:var(--navy);font-size:clamp(.95rem,1.4vw,1.25rem)}
+  .slide.dark .quote p{color:rgba(255,255,255,.85)}
+  .quote .attr{
+    font-style:normal;font-size:.8rem;font-weight:500;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--muted-fg);margin-top:1.2vh;
+  }
+
+  .arrow{
+    font-family:var(--display);font-weight:800;
+    font-size:clamp(1.3rem,2.4vw,2.1rem);
+    color:var(--navy);margin-top:2.4vh;
+  }
+  .arrow em{font-style:normal;color:var(--cornflower)}
+
+  /* --- Chrome ----------------------------------------------------------- */
+  .num-badge{
+    position:absolute;right:3vw;bottom:3.4vh;
+    font-size:.78rem;font-weight:500;letter-spacing:.08em;
+    color:var(--muted-fg);
+  }
+  .slide.dark .num-badge{color:rgba(255,255,255,.4)}
+
+  .bar{
+    position:fixed;left:0;bottom:0;height:3px;
+    background:linear-gradient(90deg,var(--cornflower),var(--purple));
+    transition:width .28s ease;z-index:10;
+  }
+
+  .hint{
+    position:fixed;left:3vw;bottom:3.4vh;
+    font-size:.74rem;letter-spacing:.06em;color:var(--muted-fg);
+    opacity:.55;z-index:10;
+  }
+
+  /* --- Overview grid (press O) ------------------------------------------ */
+  .overview{
+    position:fixed;inset:0;background:var(--navy);z-index:20;
+    display:none;padding:5vh 5vw;overflow-y:auto;
+  }
+  .overview.on{display:block}
+  .overview h4{
+    font-family:var(--display);color:var(--white);font-size:1.3rem;
+    font-weight:600;margin-bottom:3vh;
+  }
+  .og{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1.2rem}
+  .og button{
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+    border-radius:var(--radius);padding:1.2rem;text-align:left;cursor:pointer;
+    color:var(--white);font-family:var(--body);font-size:.85rem;line-height:1.35;
+    transition:background .15s ease;
+  }
+  .og button:hover{background:rgba(138,162,223,.22)}
+  .og button span{
+    display:block;font-family:var(--display);font-weight:800;
+    color:var(--cornflower);font-size:.78rem;margin-bottom:.5rem;
+  }
+
+  @media print{
+    html,body{overflow:visible;height:auto}
+    .slide{display:flex!important;opacity:1!important;position:relative;
+           height:100vh;page-break-after:always}
+    .bar,.hint,.overview{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- 1 ---------------------------------------------------------------- -->
+  <section class="slide dark">
+    <div class="eyebrow">Autopilot Asia 2026 · Round 2 · Track 3</div>
+    <h1>Service Desk<br>Command Center.</h1>
+    <div class="rule"></div>
+    <p class="lead">An AI Employee that eliminates problems instead of processing tickets.</p>
+    <div class="stats">
+      <div class="stat"><div class="n accent">380</div><div class="l">tickets that need never happen</div></div>
+    </div>
+    <div class="num-badge">1</div>
+  </section>
+
+  <!-- 2 ---------------------------------------------------------------- -->
+  <section class="slide">
+    <div class="eyebrow">The premise</div>
+    <h2>Closing tickets faster is<br>the <span class="gradient">wrong goal</span>.</h2>
+    <p>If 44 people request shared drive access every month, resolving those tickets
+       quickly is being efficient at something that should not be happening.</p>
+    <p style="margin-top:2.4vh"><strong>Everyone else optimises the queue. We went after what keeps filling it.</strong></p>
+    <div class="num-badge">2</div>
+  </section>
+
+  <!-- 3 ---------------------------------------------------------------- -->
+  <section class="slide dark">
+    <div class="eyebrow">What makes this different</div>
+    <h2>Three choices.<br>One idea.</h2>
+    <div class="cards">
+      <div class="card" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)">
+        <div class="num">01</div>
+        <h3 style="color:#fff">Stop the tickets happening</h3>
+        <p style="color:rgba(255,255,255,.68)">Find the root cause, propose the permanent fix, name the owner.</p>
+      </div>
+      <div class="card" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)">
+        <div class="num">02</div>
+        <h3 style="color:#fff">Know when to stop</h3>
+        <p style="color:rgba(255,255,255,.68)">Four refusal reasons, none overridable by urgency.</p>
+      </div>
+      <div class="card" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)">
+        <div class="num">03</div>
+        <h3 style="color:#fff">Never invent a number</h3>
+        <p style="color:rgba(255,255,255,.68)">A dash is honest. A zero is a claim.</p>
+      </div>
+    </div>
+    <div class="num-badge">3</div>
+  </section>
+
+  <!-- 4 ---------------------------------------------------------------- -->
+  <section class="slide">
+    <div class="eyebrow">01 · Stop the tickets happening</div>
+    <h2>37 password resets<br>are <span class="gradient">one problem</span>.</h2>
+    <p>A normal service desk resolves 37 tickets. Our agent noticed they were the same
+       problem, checked the knowledge base, found no self-service route, and proposed
+       building one.</p>
+    <div class="quote">
+      <p>"Implement a Self-Service Password Reset portal integrated with MFA, so users
+         verify their own identity and reset credentials without help desk intervention."</p>
+      <div class="attr">Proposed by the Correlator · owner: IAM Team</div>
+    </div>
+    <div class="arrow">Those 37 tickets stop arriving. <em>Not resolved faster. Gone.</em></div>
+    <div class="num-badge">4</div>
+  </section>
+
+  <!-- 5 ---------------------------------------------------------------- -->
+  <section class="slide">
+    <div class="eyebrow">01 · At scale</div>
+    <h2>460 tickets.<br>15 actual problems.</h2>
+    <div class="stats">
+      <div class="stat"><div class="n">15</div><div class="l">root causes found</div></div>
+      <div class="stat"><div class="n">75</div><div class="l">collapsed today · work avoided</div></div>
+      <div class="stat"><div class="n accent">380</div><div class="l">preventable · forecast</div></div>
+    </div>
+    <p style="margin-top:3.4vh"><strong>Two numbers, never blended.</strong> One is work already
+       avoided. The other is conditional on a human approving each fix. Adding them
+       together would make a better headline and a worse answer.</p>
+    <div class="num-badge">5</div>
+  </section>
+
+  <!-- 6 ---------------------------------------------------------------- -->
+  <section class="slide">
+    <div class="eyebrow">02 · Know when to stop</div>
+    <h2>It refused the most<br>urgent ticket in the queue.</h2>
+    <p>Highest priority. Already past SLA. A known fix available. Every incentive said act.</p>
+    <p style="margin-top:2.2vh"><strong>It stopped because two employees share a display name</strong>
+       and it could not tell which of them had raised it. Applying a fix to the wrong
+       person's account to hit a deadline is not a win.</p>
+    <div class="stats">
+      <div class="stat"><div class="n accent">32</div><div class="l">tickets held back for that reason</div></div>
+      <div class="stat"><div class="n">4</div><div class="l">refusal reasons, none overridable</div></div>
+    </div>
+    <div class="num-badge">6</div>
+  </section>
+
+  <!-- 7 ---------------------------------------------------------------- -->
+  <section class="slide">
+    <div class="eyebrow">02 · And it is auditable</div>
+    <h2>Every refusal has<br>a <span class="gradient">reason on the record</span>.</h2>
+    <p>ITSM-2212 had a fix ready and an open change request awaiting board approval.
+       Change control outranks confidence, so the agent opened the approval in GitHub
+       rather than shipping. A human reviewed it and upheld the block.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">9,752</div><div class="l">policy evaluations logged</div></div>
+      <div class="stat"><div class="n">4</div><div class="l">policies, editable without code</div></div>
+      <div class="stat"><div class="n accent">176</div><div class="l">waiting on a human</div></div>
+    </div>
+    <p style="margin-top:2.6vh">Each evaluation names the rule, the threshold in force
+       <em>at that moment</em>, and what it was compared against. A later edit never
+       rewrites history.</p>
+    <div class="num-badge">7</div>
+  </section>
+
+  <!-- 8 ---------------------------------------------------------------- -->
+  <section class="slide">
+    <div class="eyebrow">03 · Never invent a number</div>
+    <h2>One of our metrics<br>is deliberately <span class="gradient">blank</span>.</h2>
+    <p>No Operator reports resolution timestamps, so MTTR would have to be inferred.
+       The dashboard shows a dash and prints the reason underneath.</p>
+    <div class="quote">
+      <p>"Ask it something outside what the agents actually observed and it says
+         <strong>I can't answer that from agent data, so I won't guess.</strong>"</p>
+      <div class="attr">The AI Manager holds no language model</div>
+    </div>
+    <p><strong>A dash is honest. A zero is a claim.</strong> Round 1 caught the platform's own
+       chat summaries inventing ticket numbers while its audit log said otherwise. That
+       is the failure this design is built against.</p>
+    <div class="num-badge">8</div>
+  </section>
+
+  <!-- 9 ---------------------------------------------------------------- -->
+  <section class="slide dark">
+    <div class="eyebrow">How it runs</div>
+    <h2>One Orchestrator.<br>Seven Operators.</h2>
+    <p>Triage and correlation start in parallel, reconcile, then branch three ways on
+       the decision. All of it on Supervity Auto. The Command Center never decides
+       anything: it reads what the agents did, ranks it, and shows which run produced it.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">96</div><div class="l">agent runs · 97.8% success</div></div>
+      <div class="stat"><div class="n">8</div><div class="l">live integrations</div></div>
+      <div class="stat"><div class="n accent">0</div><div class="l">agent logic in our codebase</div></div>
+    </div>
+    <div class="num-badge">9</div>
+  </section>
+
+  <!-- 10 --------------------------------------------------------------- -->
+  <section class="slide">
+    <div class="eyebrow">The demo</div>
+    <h2>Let's look at<br>the real thing.</h2>
+    <p><strong>Elimination Backlog</strong> · the ranked classes and their proposed fixes</p>
+    <p><strong>Agent timeline</strong> · one full cycle, step by step, with the raw output</p>
+    <p><strong>Policies</strong> · change a threshold, watch it take effect</p>
+    <p><strong>Workbench</strong> · four different reasons the agent stopped</p>
+    <p><strong>Insights &amp; Data Manager</strong> · what it noticed, and honest health</p>
+    <div class="num-badge">10</div>
+  </section>
+
+  <!-- 11 --------------------------------------------------------------- -->
+  <section class="slide dark">
+    <div class="eyebrow">In closing</div>
+    <h2>An agent that acts fast<br>is easy to build.</h2>
+    <p class="lead" style="margin-top:1vh">One that stops is the one you would actually
+       let near your company.</p>
+    <div class="stats" style="margin-top:5vh">
+      <div class="stat"><div class="n accent">380</div><div class="l">tickets that need never happen</div></div>
+    </div>
+    <div class="num-badge">11</div>
+  </section>
+
+</div>
+
+<div class="bar" id="bar"></div>
+<div class="hint">← → navigate · F fullscreen · O overview</div>
+
+<div class="overview" id="ov">
+  <h4>Jump to a slide</h4>
+  <div class="og" id="og"></div>
+</div>
+
+<script>
+(function(){
+  const slides = [...document.querySelectorAll('.slide')];
+  const bar = document.getElementById('bar');
+  const ov  = document.getElementById('ov');
+  const og  = document.getElementById('og');
+  let i = 0;
+
+  function show(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    bar.style.width = ((i + 1) / slides.length * 100) + '%';
+    location.hash = i + 1;
+  }
+
+  // Build the overview from the slides themselves, so adding a slide above
+  // needs no corresponding edit down here.
+  slides.forEach((s, k) => {
+    const b = document.createElement('button');
+    const eyebrow = s.querySelector('.eyebrow');
+    const heading = s.querySelector('h1, h2');
+    b.innerHTML = '<span>' + (k + 1) + (eyebrow ? ' · ' + eyebrow.textContent : '') + '</span>'
+                + (heading ? heading.textContent.replace(/\s+/g, ' ').trim() : '');
+    b.onclick = () => { ov.classList.remove('on'); show(k); };
+    og.appendChild(b);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (ov.classList.contains('on') && e.key !== 'o' && e.key !== 'O' && e.key !== 'Escape') return;
+    switch(e.key){
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': show(i + 1); break;
+      case 'ArrowLeft':  case 'ArrowUp':   case 'PageUp':             show(i - 1); break;
+      case 'Home': show(0); break;
+      case 'End':  show(slides.length - 1); break;
+      case 'f': case 'F':
+        document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+        break;
+      case 'o': case 'O': ov.classList.toggle('on'); break;
+      case 'Escape': ov.classList.remove('on'); break;
+    }
+  });
+
+  // Click to advance, but not when the click was a text selection.
+  document.getElementById('deck').addEventListener('click', e => {
+    if (window.getSelection().toString()) return;
+    show(e.clientX < window.innerWidth * 0.22 ? i - 1 : i + 1);
+  });
+
+  show(Math.max(0, (parseInt(location.hash.slice(1), 10) || 1) - 1));
+})();
+</script>
+</body>
+</html>
