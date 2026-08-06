@@ -45,31 +45,11 @@ const nextConfig: NextConfig = {
   // Disable source maps in production for faster builds
   productionBrowserSourceMaps: false,
 
-  // Proxy API calls to the backend from this same origin.
-  //
-  // Without this the browser has to reach the backend on its own host and port,
-  // which means two public URLs and a CORS allowlist when the app is shared
-  // outside this machine. One origin is simpler and is what a reviewer expects
-  // from a single link.
-  //
-  // /api/auth/* is excluded explicitly rather than relying on route precedence.
-  // `afterFiles` did not reliably yield to the App Router's auth handlers here,
-  // and the proxy swallowed NextAuth's session endpoint — which surfaced as
-  // every page rendering empty while the API was healthy. A negative lookahead
-  // is unambiguous.
-  async rewrites() {
-    const backend = process.env.INTERNAL_API_URL || 'http://backend:8000'
-    return {
-      beforeFiles: [],
-      afterFiles: [
-        {
-          source: '/api/:path((?!auth/).*)',
-          destination: `${backend}/api/:path*`,
-        },
-      ],
-      fallback: [],
-    }
-  },
+  // The /api/* proxy is a route handler at src/app/api/[...path]/route.ts, not
+  // a rewrite. Next resolves rewrites during `next build` and freezes the
+  // destination into the routes manifest, which bakes the backend address into
+  // the image — fine for docker-compose, broken anywhere the address is only
+  // known at run time. See that file for the full account.
 
   // Windows bind mounts into the Docker Linux VM do not deliver inotify events,
   // so the dev server never notices an edit and every change needs a container
