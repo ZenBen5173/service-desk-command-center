@@ -66,7 +66,7 @@ more work for a general audience.
 > Most teams will show you an agent that closes tickets faster. We went after
 > three different things.
 >
-> **1. Stop the tickets happening at all.** Resolving 44 shared drive requests
+> **1. 🔁 Stop the tickets happening at all.** Resolving 44 shared drive requests
 > quickly is being efficient at something that should not exist. So instead of
 > working the queue, our agent works out what keeps filling it. 460 tickets
 > turned out to be 15 actual root causes, each with a proposed permanent fix and
@@ -74,14 +74,14 @@ more work for a general audience.
 > resolving, because they do not need to happen. That number is the one we would
 > ask anyone to judge us on.
 >
-> **2. Know when to stop.** The ticket it refused was the highest priority in the
+> **2. ✋ Know when to stop.** The ticket it refused was the highest priority in the
 > queue and already past its deadline. Every incentive said act. It stopped
 > because two employees share the same display name and it could not tell which
 > of them had raised it. Fixing the wrong person's laptop to hit a deadline is
 > not a win. So it handed the ticket to a human with the evidence attached, and
 > waited. 32 tickets were held back for that same reason.
 >
-> **3. Never invent a number.** One of our metrics is blank. No part of the
+> **3. ➖ Never invent a number.** One of our metrics is blank. No part of the
 > system could measure it honestly, so rather than estimating something
 > plausible, the dashboard shows a dash and prints the reason underneath. The
 > chat surface works the same way: ask it something outside what the agents
@@ -92,11 +92,11 @@ more work for a general audience.
 > where its own judgement runs out, and stops there instead of guessing
 > confidently.
 >
-> None of this was a solo effort. @Thevesh A/L Chandran has been building this
+> 🙏 None of this was a solo effort. @Thevesh A/L Chandran has been building this
 > with me since round one, and it would not exist without him. Thank you for
 > sticking with it through the long nights.
 >
-> Thanks to @Vijay Navaluri and the @Supervity team for running Autopilot Asia,
+> 🎯 Thanks to @Vijay Navaluri and the @Supervity team for running Autopilot Asia,
 > and for a problem statement with real teeth in it. The dataset had duplicate
 > names, four date formats and a major incident hiding inside 25 separate
 > tickets. We learned more from what it refused to make easy than from anything
@@ -119,6 +119,13 @@ as insecurity, and some of them will see the post.
 
 **If it runs long,** cut point 3. It is the subtlest of the three and the only
 one without a memorable number attached.
+
+**On the emojis:** three on the numbered points as visual anchors, two on the
+thanks. Deliberately none in the opening lines. The hook works because it reads
+like a plain statement of fact, and an emoji beside it makes it look like
+marketing. Blank lines between every paragraph matter more than emojis do on
+LinkedIn; the app collapses single line breaks and a wall of text loses people
+faster than anything else.
 
 ---
 
