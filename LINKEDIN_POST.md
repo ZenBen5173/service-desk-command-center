@@ -9,7 +9,7 @@ Pick one, paste, attach the video.
 
 ---
 
-## Option A — the contrarian claim *(recommended)*
+## Option A — the contrarian claim
 
 > Every AI service desk demo brags about closing tickets faster.
 >
@@ -45,34 +45,52 @@ takes it away. That tension is the whole click.
 
 ---
 
-## Option B — the refusal *(strongest single story)*
+## Option B — the refusal *(recommended)*
 
-> Our AI agent refused to fix a ticket today.
+> Our AI agent refused to fix a ticket today. That was the best thing it did all
+> week.
 >
-> Highest priority. Already past SLA. Every incentive to act.
+> Some context: we're competing in the Autopilot Asia hackathon, building what
+> Supervity calls an AI Employee — not a chatbot, but an agent that actually runs
+> a business process end to end. Ours runs an IT service desk: it reads incoming
+> tickets, diagnoses them, fixes what it safely can, and escalates the rest.
 >
-> It stopped because two employees in the dataset share a display name, and it
-> couldn't tell which person had raised it. Thirty-two tickets were held back for
-> exactly that reason.
+> The ticket it refused was the highest priority in the queue and already past
+> its deadline. Every incentive said act.
 >
-> We built it that way on purpose. For Autopilot Asia 2026 we made an AI service
-> desk that eliminates problems rather than just closing tickets — 460 tickets
-> reduced to 15 real problems, each with a proposed permanent fix and a named
-> owner.
+> It stopped because two employees in the company share the same display name,
+> and it couldn't tell which of them had raised it. Fixing the wrong person's
+> laptop to hit a target isn't a win. So it handed the ticket to a human with the
+> evidence attached and waited. Thirty-two tickets were held back for exactly
+> that reason.
 >
-> 380 of those tickets are preventable. That's the number we care about.
+> That restraint is the whole design. The interesting question in agentic AI
+> isn't how much a system can do on its own — it's whether it knows where its own
+> judgement runs out.
 >
-> But the part I'd actually defend in a room full of judges is the refusal. An
-> agent that acts fast is easy. One that won't touch the wrong person's laptop to
-> hit a target is the one you'd deploy.
+> The rest of what we built follows from the same instinct. Instead of closing
+> tickets faster, it works out which problems keep generating them: 460 tickets
+> collapsed into 15 actual root causes, each with a proposed permanent fix and
+> the team that owns it. 380 of those tickets are preventable — they don't need
+> resolving, because they don't need to happen.
 >
-> One Orchestrator, seven Operators, all on @Supervity Auto. Every decision
-> audited.
+> One orchestrator agent, seven specialists, every decision logged and auditable.
+> And where it couldn't measure something honestly, it left the number blank
+> rather than estimating one.
+>
+> An agent that acts fast is easy to build. One that stops is the one you'd
+> actually deploy.
 >
 > #AIEmployees #Supervity #SupervityAI #NoCode #AgenticAI #AutopilotHackathon
 
-**Why it works:** "refused" in the first four words. Nobody expects a build-log
-post to open by admitting the thing didn't do something.
+**Why it works:** "refused" lands in the first four words, and the second
+sentence tells you it was deliberate — so a cold reader knows this is a design
+story, not a failure story, before the fold. Paragraph two explains Supervity,
+the hackathon and what an AI Employee is in three lines, without slowing the
+hook.
+
+**If you want it shorter,** cut the "One orchestrator, seven specialists"
+paragraph. It's the most technical and the least necessary.
 
 ---
 
