@@ -170,7 +170,13 @@ async def sync_run_timeline(db: Session, client: SupervityClient, auto_run_id: s
 
     row = db.query(AgentRun).filter_by(auto_run_id=auto_run_id).first()
     if row is None:
-        row = AgentRun(auto_run_id=auto_run_id)
+        # Populate the non-null columns before flushing. A run triggered from
+        # here is newer than the last run-list sync, so it has no row yet, and
+        # flushing an empty one fails on auto_workflow_id.
+        row = AgentRun(
+            auto_run_id=auto_run_id,
+            auto_workflow_id=run_data.get("workflowId") or "unknown",
+        )
         db.add(row)
         db.flush()
 

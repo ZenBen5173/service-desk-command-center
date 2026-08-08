@@ -235,15 +235,20 @@ def collect(db: Session) -> dict:
                         }
                         router_origin = origin
 
+    # Per-ticket verdicts, counted once per ticket rather than once per mention.
+    # Read through the same code the resolution page uses, so the Dashboard and
+    # that page can never report different rates off the same runs. Scanning
+    # activity payloads directly counted a ticket again for every step that
+    # echoed its decision, and only saw the newest run of each workflow — which
+    # left the Dashboard reporting four decisions where nineteen tickets had
+    # been decided.
+    from .resolution import read_decisions
+
+    per_ticket = read_decisions(db)
     decisions: dict[str, int] = {}
-    for activity in activities:
-        for payload in _payloads(activity):
-            for node in _walk(payload):
-                verdict = node.get("decision") or node.get("final_decision")
-                if isinstance(verdict, str) and verdict.strip():
-                    key = verdict.strip().upper().replace(" ", "_")
-                    if key in ("ALLOW", "HUMAN_REVIEW", "DENY", "BLOCK", "BLOCKED"):
-                        decisions[key] = decisions.get(key, 0) + 1
+    for entry in per_ticket["decisions"]:
+        key = str(entry["decision"]).strip().upper().replace(" ", "_")
+        decisions[key] = decisions.get(key, 0) + 1
 
     if router_counts:
         allowed = router_counts.get("allowed", 0)
@@ -274,7 +279,10 @@ def collect(db: Session) -> dict:
             # from three hand-picked tickets is not the same claim as one from
             # a batch the Orchestrator chose.
             "basis": "individual_operator_runs",
+            "avg_confidence": per_ticket["avg_confidence"],
+            "decisions_without_confidence": per_ticket["decisions_without_confidence"],
         }
+        sources["resolution"] = "Ticket Evidence and Policy Operator"
 
     # MTTR needs resolution timestamps that no Operator reports yet. Saying so
     # is better than deriving a number the agents would not recognise.

@@ -164,17 +164,26 @@ class SupervityClient:
     ) -> dict:
         """Run a workflow and block until it finishes.
 
-        Sent as multipart/form-data with `inputs` JSON-encoded — that is what the
-        endpoint expects, not a JSON body.
-        """
-        import json as _json
+        Sent as multipart/form-data with one field per input, in bracket
+        notation: `inputs[issue_key]=ITSM-1`. A JSON-encoded `inputs` field is
+        rejected with "expected record, received string", and a JSON body 500s —
+        the endpoint parses bracketed form fields into the record it wants.
 
+        Booleans and numbers are stringified, because form fields carry no
+        types; Auto coerces them against the workflow's declared input schema.
+        """
         url = f"{self.base_url}{API_PREFIX}/workflow-runs/execute"
         form: dict[str, str] = {"workflowId": workflow_id}
-        if inputs:
-            form["inputs"] = _json.dumps(inputs)
-        if envs:
-            form["envs"] = _json.dumps(envs)
+        for name, value in (inputs or {}).items():
+            if value is None:
+                continue
+            if isinstance(value, bool):
+                form[f"inputs[{name}]"] = "true" if value else "false"
+            else:
+                form[f"inputs[{name}]"] = str(value)
+        for name, value in (envs or {}).items():
+            if value is not None:
+                form[f"envs[{name}]"] = str(value)
 
         try:
             async with httpx.AsyncClient(timeout=timeout or 900.0) as client:

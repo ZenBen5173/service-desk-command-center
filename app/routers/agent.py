@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from ..core.database import get_db
 from ..models.agent import AgentActivity, AgentRun, AgentWorkflow
-from ..services import agent_sync
+from ..services import agent_sync, resolution
 from ..services.supervity import (
     SupervityClient,
     SupervityError,
@@ -310,6 +310,42 @@ def agent_metrics(db: Session = Depends(get_db)):
             by_workflow.values(), key=lambda e: e["runs"], reverse=True
         ),
     }
+
+
+# ---------------------------------------------------------------------------
+# Auto-resolution
+# ---------------------------------------------------------------------------
+
+
+@router.get("/resolution")
+def resolution_summary(db: Session = Depends(get_db)):
+    """Per-ticket verdicts the evidence Operator produced, and the rate they imply.
+
+    Read-only. Returns whatever decisions have been mirrored so far; an empty
+    list means the Operator has not been asked about any ticket individually,
+    not that it decided nothing.
+    """
+    return resolution.read_decisions(db)
+
+
+@router.post("/resolution/sweep")
+async def resolution_sweep(
+    limit: int = Query(20, ge=1, le=100),
+    concurrency: int = Query(3, ge=1, le=5),
+    db: Session = Depends(get_db),
+    client: SupervityClient = Depends(get_supervity_client),
+):
+    """Ask the evidence Operator about each pending ticket, one call per ticket.
+
+    Blocking, and slow by design — every ticket is a real Operator run on Auto.
+    Twenty tickets take a few minutes.
+    """
+    try:
+        return await resolution.sweep(db, client, limit=limit, concurrency=concurrency)
+    except SupervityNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except SupervityError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
 
 
 # ---------------------------------------------------------------------------
