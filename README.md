@@ -210,13 +210,9 @@ runs on a hidden dataset with the same schema.
 | File | What's in it |
 |---|---|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System, agent cycle, policy round-trip, schema — as diagrams |
-| [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Where the build stands, deliverable by deliverable |
-| [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) | The 7-minute demo, word for word |
-| [`DEPLOY.md`](DEPLOY.md) | Getting a stable public URL |
+| [`docs/auto-workflows/`](docs/auto-workflows/) | The Orchestrator and all seven Operators, exported from Auto |
 | [`docs/Service-Desk-Command-Center.pptx`](docs/Service-Desk-Command-Center.pptx) | Presentation deck, 11 slides with speaker notes |
 | [`docs/demo-deck.html`](docs/demo-deck.html) | The same deck as a browser fallback |
-| [`docs/auto-workflows/`](docs/auto-workflows/) | The Orchestrator and all seven Operators, exported from Auto |
-| [`docs/auto-operators/`](docs/auto-operators/) | Paste-ready build prompts and fix packs |
 
 ## Running it locally
 
