@@ -613,46 +613,73 @@ export default function WorkbenchPage() {
         </p>
       </motion.div>
 
+      {/* What needs a person, split by the kind of decision rather than by
+          how the rows are stored. A bare "36 awaiting" hid that thirty of
+          those are decisions about whole classes and six are about single
+          tickets, which are not the same job. Each card matches a tab, so the
+          number and the list below it always agree. */}
       <motion.div
         className='grid grid-cols-2 gap-4 lg:grid-cols-4'
         variants={itemVariants}
       >
         <Metric
-          label='Awaiting a human'
-          explain="Items an Operator escalated rather than acting on. One open item per subject — the same escalation re-reported by a later cycle is not new work."
-          value={loading && !summary ? '…' : String(summary?.open ?? 0)}
-          hint='blocked until someone decides'
+          label='Recurring problems'
+          explain={
+            'Classes the Operators found and proposed a permanent fix for. ' +
+            'Approving records your endorsement — the owning team still has to ' +
+            'build it. The agent never ships a systemic change on its own.'
+          }
+          value={
+            loading && !summary
+              ? '…'
+              : String(summary?.by_type?.RECURRING_CLASS ?? 0)
+          }
+          hint='endorse the fix, owning team builds it'
         />
         <Metric
-          label='Resolved'
-          explain="Items a person has decided. Their decision stands: a later run reporting the same subject never reopens it."
+          label='Knowledge gaps filled'
+          explain={
+            'No article covered these problems, so the agent wrote one and ' +
+            'stopped. Publishing is your call. Most tickets are blocked for ' +
+            'exactly this reason, so approving these is what unblocks them.'
+          }
+          value={
+            loading && !summary
+              ? '…'
+              : String(summary?.by_type?.knowledge_draft ?? 0)
+          }
+          hint='agent wrote them, you publish'
+        />
+        <Metric
+          label='Tickets needing sign-off'
+          explain={
+            'Individual tickets, not classes. A change awaiting board approval, ' +
+            'or a rolled-back change the agent forced back open for ' +
+            'verification. Each concerns one specific change.'
+          }
+          value={
+            loading && !summary
+              ? '…'
+              : String(
+                  (summary?.by_type?.change_approval ?? 0) +
+                    (summary?.by_type?.verification_required ?? 0) +
+                    (summary?.by_type?.exceptions ?? 0)
+                )
+          }
+          hint='change approval or rollback'
+        />
+        <Metric
+          label='Decided'
+          explain={
+            'Decisions a person made, each recorded against what the agent ' +
+            'recommended. Only a human can set this — an Operator can raise an ' +
+            'item but never close one.'
+          }
           value={loading && !summary ? '…' : String(summary?.resolved ?? 0)}
-          hint='decisions on the record'
-        />
-        <Metric
-          label='Exception types'
-          explain="Distinct reasons the agent stopped — change approval, rollback verification, a recurring class, a drafted article, or a plain escalation."
-          value={
-            loading && !summary
-              ? '…'
-              : String(Object.keys(summary?.by_type ?? {}).length)
-          }
-          hint='distinct reasons the agent stopped'
-        />
-        <Metric
-          label='Avg time to decision'
-          explain="From the moment an Operator raised the item to the moment a person decided it. Blank until something has been decided."
-          value={
-            loading && !summary
-              ? '…'
-              : summary?.avg_time_to_decision_seconds != null
-                ? `${Math.round(summary.avg_time_to_decision_seconds / 60)}m`
-                : '—'
-          }
           hint={
-            summary?.avg_time_to_decision_seconds == null
-              ? 'nothing resolved yet'
-              : 'raised to decided'
+            summary?.avg_time_to_decision_seconds != null
+              ? `by a person · ${Math.round(summary.avg_time_to_decision_seconds / 60)}m average`
+              : 'by a person, with a reason'
           }
         />
       </motion.div>
