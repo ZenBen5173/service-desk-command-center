@@ -25,6 +25,13 @@ interface Decision {
   confidence: number | null
   reason: string | null
   policy_evaluations: Array<Record<string, unknown>>
+  /**
+   * False when the rule the Operator gave as its reason is not among the gates
+   * it logged. Five passing gates and an unexplained block reads as a
+   * contradiction; saying which record is missing is better than hiding it or
+   * inventing the gate.
+   */
+  deciding_rule_logged: boolean
   auto_run_id: string
   workflow_name: string | null
   decided_at: string | null
@@ -143,6 +150,16 @@ function DecisionRow({ decision }: { decision: Decision }) {
 
         {open && (
           <div className='mt-4 space-y-3 border-t border-border/40 pt-4'>
+            {!decision.deciding_rule_logged && (
+              <div className='rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800'>
+                <strong>The rule that decided this is not in the gates below.</strong>{' '}
+                The Operator gave its reason as “{decision.reason}” but recorded
+                no evaluation for it. Every gate listed here passed — the refusal
+                came from a check it applied without logging. Shown rather than
+                hidden, and not filled in on the Operator’s behalf.
+              </div>
+            )}
+
             {decision.policy_evaluations.length > 0 && (
               <div>
                 <p className='mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>

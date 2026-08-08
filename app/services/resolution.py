@@ -222,6 +222,43 @@ def pending_ticket_keys(
     return keys[:limit], source
 
 
+# Phrases an Operator uses when a rule refuses, mapped to the evaluation that
+# should be present if that rule ran. Matching on the reason text is crude, but
+# the alternative is asserting nothing is missing, which was the bug.
+REASON_TO_GATE: dict[str, tuple[str, ...]] = {
+    "safe for automation": ("AUTO_SAFE", "X_AUTO_SAFE", "AUTOMATION_SAFETY"),
+    "auto-safe": ("AUTO_SAFE", "X_AUTO_SAFE", "AUTOMATION_SAFETY"),
+    "change": ("CHANGE", "CAB", "CHANGE_CONTROL"),
+    "access change": ("ACCESS_CHANGE_BLOCK", "ACCESS"),
+    "identity": ("IDENTITY",),
+    "confidence": ("KB_CONFIDENCE", "CONFIDENCE"),
+    "vip": ("VIP",),
+}
+
+
+def _reason_covered(reason: Any, evaluations: list) -> bool:
+    """Is the rule the Operator gave as its reason among the gates it logged?
+
+    True when nothing in the reason maps to a known gate — an unrecognised
+    reason is not evidence of a gap. False only when a rule is clearly named
+    and no matching evaluation was recorded.
+    """
+    if not isinstance(reason, str) or not reason.strip():
+        return True
+
+    text = reason.lower()
+    logged = " ".join(
+        str(e.get("policy_key", "")) + " " + str(e.get("policy_name", ""))
+        for e in evaluations
+        if isinstance(e, dict)
+    ).upper()
+
+    for phrase, keys in REASON_TO_GATE.items():
+        if phrase in text and not any(key in logged for key in keys):
+            return False
+    return True
+
+
 def read_decisions(db: Session) -> dict:
     """Every per-ticket verdict the Operator has produced, as it reported them.
 
@@ -251,13 +288,24 @@ def read_decisions(db: Session) -> dict:
             continue
 
         confidence = payload.get("confidence")
+        evaluations = payload.get("policy_evaluations") or []
         by_ticket[str(key)] = {
+            # Whether the rule named in the reason is among the logged gates.
+            # ITSM-2180 showed five passing gates and a block, because the
+            # Operator applied the auto-safe rule without recording it as an
+            # evaluation. Five greens and an unexplained refusal reads as a
+            # contradiction, and "every evaluation is logged" is a claim this
+            # build makes. Flagging the gap keeps the claim honest; inventing
+            # the missing gate would not.
+            "deciding_rule_logged": _reason_covered(
+                payload.get("decision_reason"), evaluations
+            ),
             "issue_key": str(key),
             "decision": str(verdict),
             "auto_resolved": str(verdict).upper() in ALLOW_VERDICTS,
             "confidence": confidence if isinstance(confidence, (int, float)) else None,
             "reason": payload.get("decision_reason"),
-            "policy_evaluations": payload.get("policy_evaluations") or [],
+            "policy_evaluations": evaluations,
             "auto_run_id": run.auto_run_id,
             "workflow_name": run.workflow_name,
             "decided_at": run.auto_created_at.isoformat() if run.auto_created_at else None,
