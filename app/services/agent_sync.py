@@ -267,6 +267,22 @@ async def sync_all(db: Session, client: SupervityClient, timeline_limit: int = 2
         result["errors"].append(f"runs: {exc}")
         result["runs"] = None
 
+    # A run synced while it was still executing keeps whatever partial timeline
+    # Auto had published at that moment, and never asks again — the Orchestrator
+    # cycle we watched live froze at 4 steps when it eventually recorded 10.
+    # Re-fetch any run whose timeline was captured before the run finished.
+    stale = (
+        db.query(AgentRun)
+        .filter(AgentRun.timeline_synced_at.isnot(None))
+        .filter(AgentRun.auto_updated_at.isnot(None))
+        .filter(AgentRun.timeline_synced_at < AgentRun.auto_updated_at)
+        .all()
+    )
+    for row in stale:
+        row.timeline_synced_at = None
+    if stale:
+        db.commit()
+
     pending = (
         db.query(AgentRun)
         .filter(AgentRun.timeline_synced_at.is_(None))
