@@ -317,6 +317,19 @@ def agent_metrics(db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 
+@router.get("/sync/status")
+def sync_status():
+    """What the background sync has been doing.
+
+    Shown in the UI so "live" is a claim the page can back up: when it last
+    pulled from Auto, how often it does, and any error it hit. A dashboard that
+    says live without saying when it last looked is asking to be believed.
+    """
+    from ..services import autosync
+
+    return autosync.status()
+
+
 @router.get("/resolution")
 def resolution_summary(db: Session = Depends(get_db)):
     """Per-ticket verdicts the evidence Operator produced, and the rate they imply.

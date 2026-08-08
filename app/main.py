@@ -258,6 +258,23 @@ app.include_router(api_router)
 
 
 # =============================================================================
+# BACKGROUND SYNC
+# =============================================================================
+#
+# The pages poll this database every thirty seconds, but nothing pulled from
+# Supervity Auto unless somebody clicked Sync. A dashboard left open showed
+# whatever was true when it was last clicked, and during a demo nobody is
+# clicking. This keeps the mirror current on its own.
+
+
+@app.on_event("startup")
+async def _start_background_sync() -> None:
+    from .services import autosync
+
+    autosync.start()
+
+
+# =============================================================================
 # ROOT ENDPOINT
 # =============================================================================
 
