@@ -52,7 +52,7 @@ Then hand over. Do not explain the page yet — it is the closing beat.
 
 ---
 
-## 1 · SERVICES — Zen Ben · 75 seconds
+## 1 · SERVICES — Zen Ben · 90 seconds
 
 Told as one ticket's journey rather than a list. Follow a ticket through and
 the architecture explains itself.
@@ -86,19 +86,31 @@ the architecture explains itself.
 > A ticket the agent touched looks exactly like a ticket a person touched. That
 > matters when the whole argument is that you can check its work."
 
-**Back to the flow.**
+**Back to the flow. Point at each row as you name it — six left, one line each.**
 
-> "**The agent thinks on Supervity Auto** — one Orchestrator, seven Operators.
+> "The other six are quicker.
+>
+> **Supervity Auto** — the agent platform. One Orchestrator, seven Operators.
 > Every decision on this screen was made there, not here.
 >
-> **The person hears about it through Outlook.** When a ticket resolves, the
-> requester gets a real email.
+> **Microsoft Outlook** — the channel out. When a ticket resolves, the person
+> who raised it gets a real email, not a status change they have to go and look
+> for.
 >
-> **When the agent won't act alone, it stops at a human input form** — that's
-> the Workbench, and it's the next thing you'll see.
+> **Microsoft OneDrive** — listed twice on purpose, as data source and as
+> storage. The tickets and the knowledge base come in from it; the reports the
+> agents write go back out to it.
 >
-> **Everything the agents did is mirrored into Postgres**, which is what makes
-> this Command Center instant instead of a loading spinner over an API.
+> **The human input form** — the hand-off point. When the agent won't act
+> alone, this is where it stops. That's the Workbench, and it's next.
+>
+> **PostgreSQL** — everything the agents did, mirrored locally. It's why this
+> Command Center is instant instead of a spinner over somebody else's API, and
+> why it still shows you history if Auto is briefly unreachable.
+>
+> **A language model** — used by the Operators on Auto for clustering and
+> classification. Not by this app. There is no model in this codebase at all,
+> which is why the chat here will tell you it doesn't know rather than guess.
 >
 > And this page is generated from the workflows on Auto rather than hardcoded.
 > Connect something new there and it appears here on its own."
