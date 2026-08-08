@@ -1,332 +1,339 @@
-# Demo script — 7 minutes
+# Demo script — two presenters, 10 minutes
 
-The Round 2 brief (`docs/hackathon-brief.md`) asks for **5–10 minutes** showing
-the full flow: trigger → Orchestrator → delegation → policies enforced →
-exception → human resolves → insights. This script covers all seven beats and
-lands around 7:00, leaving room to breathe.
+Order follows the guidance from Supervity: services, workbench, policies, what
+the AI does that a person cannot, the live demo, then the differentiator last.
 
-**Slides:** `docs/Service-Desk-Command-Center.pptx`, 11 slides, speaker notes on
-every one. Slides 1 to 9 make the argument, 10 hands over to the live app, 11
-closes. `docs/demo-deck.html` is the same deck as a browser fallback if
-PowerPoint misbehaves on the day.
+**Split**
 
-**Before you hit record**
+| Presenter | Parts |
+|---|---|
+| **Thevesh** | Intro · Workbench · What AI does that humans can't · Secret sauce |
+| **Zen Ben** | Services · Policies · Live demo |
 
-- Open seven tabs in order: Elimination · Dashboard · AI Insights · AI Policies ·
-  Workbench · Data Manager · Supervity Auto (on My Operators)
-- Confirm the green "Live from Supervity Auto" badge on the Dashboard
-- Close the browser console — a stray warning on screen reads as a broken app
-- Record from **localhost**, not the tunnel. Faster, and no URL to leak.
-- Say the numbers out loud once. They are yours; own them.
+You alternate every beat. Whoever is not speaking drives the screen for the
+other, so nobody talks while hunting for a tab.
 
-**Do not open on camera**
+**Before you start**
 
-- Ticket **ITSM-2349** in the Orchestrator's routing output — its confidence
-  reads 0.00 because of the Operator output gap, not because the agent got it
-  wrong. Use ITSM-2386 or ITSM-2273 instead; both have clean reasons.
-- Your `.env`, or anything showing the Supervity API key.
+- Tabs, left to right: Data Manager · Workbench · AI Policies · AI Insights ·
+  Auto Resolution · Elimination · Dashboard · Supervity Auto
+- Present from **localhost**. No cold start, no URL to leak.
+- Close the browser console.
+- Have the Orchestrator's input form pre-filled but not submitted.
+- Numbers move as agents run. Read what is on screen, not what is here.
+
+**Do not open**
+
+- `.env`, or anything showing the API key.
+- Run timelines from 5–6 August — some GitHub links in them point at issues
+  that have since been deleted.
 
 ---
 
-## 0:00 — 0:35 · The hook
+## INTRO — Thevesh · 45 seconds
 
-**Show:** the Elimination page, already loaded.
+**Screen:** Elimination page, loaded, not scrolled.
 
-> "Every service desk AI demo you'll see today closes tickets faster. We think
-> that's the wrong goal. If forty-four people ask for shared drive access every
-> month, resolving those tickets quickly is just being efficient at something
-> that shouldn't be happening.
+> "A service desk got forty-four separate requests for access to a shared
+> drive. Forty-four tickets. Forty-four conversations. Eleven of them breached
+> their SLA.
 >
-> So we built an AI service desk that eliminates problems instead of processing
-> them. This is the Elimination Backlog, and it's the number we'd ask you to
-> judge us on."
-
-Lead with the idea. The architecture comes later.
-
----
-
-## 0:35 — 1:40 · The differentiator
-
-**Show:** the ranked list. Point at the top three rows.
-
-> "Our agents read four hundred and sixty tickets and found fifteen distinct
-> problems underneath them. Every ticket is accounted for — the same problem just
-> shows up under a dozen different wordings.
+> Every AI service desk you'll see today would close those forty-four faster.
 >
-> Number one: shared drive access. Forty-four tickets, eleven of them breached
-> SLA. Number two: printers offline, forty-three tickets, eleven breached."
-
-**Click a row open.**
-
-> "For each one the agent proposes the permanent fix — here, group-based access
-> control with a self-service portal — names the team that owns it, and shows
-> which agent run produced the finding. A human approves before anything ships;
-> the agent never pushes a systemic change on its own."
-
-**Point at the two deflection numbers.**
-
-> "We report deflection as two separate numbers, deliberately. Forty
-> tickets already collapsed into single incidents — that work is avoided. Four
-> hundred and seventeen are preventable if these fixes ship — that's a
-> forecast, and we label it as one. Blending those into one headline would not
-> survive your first question."
-
-That last line matters. It shows you expected to be challenged.
-
----
-
-## 1:40 — 2:40 · The agents, and the trigger
-
-**Switch to:** Supervity Auto, My Operators.
-
-> "The intelligence lives on Supervity Auto — one Orchestrator and seven
-> Operators. Triage, correlation, evidence and policy, change approval, safe
-> resolution, human escalation, and a CSAT knowledge loop. Nothing here is
-> reimplemented in our code."
-
-**Switch to:** the Dashboard, scroll to Agent Activity.
-
-> "Two hundred and eighty-eight runs, ninety-nine point three percent success. The Command Center never
-> decides anything — it reads what the agents did."
-
-**Open one Orchestrator run's timeline. Scroll through the steps.**
-
-> "This is one full cycle. It starts with a trigger — the OneDrive folder, the
-> GitHub repo, and the policy thresholds currently in force.
+> Ours asks a different question: why did forty-four people have to ask?
 >
-> Correlation and triage start at the same moment — same timestamp on both.
-> Then reconcile drops any ticket already inside an incident, so we don't work
-> the same outage twenty-three times."
-
-**Point at a step's raw output.**
-
-> "Every step shows the JSON the agent actually produced. In round one we found
-> Supervity's own chat summaries contradicting its timeline — inventing ticket
-> numbers that were never in the data. So we show the audit record, never the
-> prose."
-
----
-
-## 2:40 — 3:30 · Policies that actually bite
-
-**Switch to:** AI Policies.
-
-> "Four policies, all editable without code. Fifteen thousand three hundred
-> evaluations logged."
-
-**Open the evaluation log tab. Point at a blocked row.**
-
-> "Each one names the rule that fired, the threshold that was in force at that
-> moment, and what it was compared against. A later edit never rewrites history —
-> so this is an auditable decision, not a black box."
-
-**Back to Policies. Open the auto-remediation gate. Change 0.85 to 0.95. Save.**
-
-> "Change the confidence threshold here and it becomes an input on the agent's
-> next run. No code, no workflow rebuild, and the change is logged with who did
-> it and when."
-
-**Show the change history entry that just appeared.**
-
-> "Four separate reasons this agent will stop, in strict precedence: an open
-> change request outranks everything, then an access or entitlement change, then
-> unresolved requester identity, then confidence below this gate. None of them
-> can be overridden by urgency."
-
-Reset it to 0.85 afterwards.
-
----
-
-## 3:30 — 4:40 · The human loop
-
-**Switch to:** Workbench.
-
-> "Thirty-six items are waiting on a person, and they're not a pile of failures
-> — they're five different kinds of stop. It read two hundred and sixty-seven
-> until we noticed the queue was counting how many times the agents had run
-> rather than how much work was waiting."
-
-**Open a `change approval` item — ITSM-2211.**
-
-> "This one is blocked pending change-advisory-board approval. The agent had a
-> fix. It opened a GitHub issue in the system of record, then stopped, because an
-> open change request outranks its own confidence.
+> We built an AI service desk that eliminates problems instead of processing
+> them. Four hundred and sixty tickets, fifteen root causes, and four hundred
+> and seventeen tickets that never needed to exist.
 >
-> Five tickets are sitting here for that reason — including the payroll
-> outage itself, the biggest incident in the dataset."
+> We'll come back to that. First, how it's built."
 
-**Open a `verification required` item — ITSM-2216.**
-
-> "Three of these. A change was rolled back, so the agent forced the ticket
-> back open and demanded verification rather than trusting the original fix."
-
-**Open one of the repeat-failure items — ITSM-2217.**
-
-> "And this is the interesting class. One person, the same complaint twice. The
-> agent's read is that the fix didn't work — so the answer isn't to resolve it
-> faster, it's to replace the asset. That's elimination thinking inside a single
-> ticket."
-
-**Approve or reject one with a note, on camera.**
-
-> "A human decides, and the decision is recorded against what the agent
-> recommended — so you can audit not just what happened, but whether the agent's
-> advice was any good."
+Then hand over. Do not explain the page yet — it is the closing beat.
 
 ---
 
-## 4:40 — 5:35 · Insights, and an agent that admits what it doesn't know
+## 1 · SERVICES — Zen Ben · 45 seconds
 
-**Switch to:** AI Insights.
+**Screen:** Data Manager.
 
-> "Ten insights, none of them written by us — recurring problems, incidents
-> forming, knowledge gaps, an SLA breach forecast, and where the load falls."
-
-**Open the payroll major-incident card.**
-
-> "Twenty-five tickets from twenty-two people, one root cause — reported in four
-> different languages. The clustering that recognised those as the same problem
-> ran inside the Correlator on Auto. This page ranks it and names the run."
-
-**Open the SLA breach forecast.**
-
-> "Fifty tickets already breached, measured on each region's real working
-> calendar rather than raw elapsed time. Thirty-seven of them never got a first
-> response at all — and the agent counts that as a signal, not a blank."
-
-**Open the AI Manager. Click "What can we prevent?"**
-
-> "You can ask the operation questions. The answers are assembled from the
-> agents' own output and cite the Operator they came from."
-
-**Type something off-topic — "tell me a joke".**
-
-> "And when it can't answer from agent data, it says so instead of guessing.
-> There's no language model behind this — it physically cannot invent a ticket
-> number, which is exactly what bit us in round one."
-
----
-
-## 5:35 — 6:20 · Integrations and honest health
-
-**Switch to:** Data Manager.
-
-> "Eight integrations across eight categories — OneDrive, GitHub Issues, Outlook,
-> the agent platform, the database. Discovered from the workflows on Auto, not
-> hardcoded, so connecting something new there makes it appear here."
+> "Eight integrations across eight categories, and this page is generated from
+> the workflows on Auto rather than hardcoded — connect something new there and
+> it appears here.
+>
+> The data comes from OneDrive. The system of record is GitHub Issues. The
+> channel out to people is Outlook. The intelligence is one Orchestrator and
+> seven Operators on Supervity Auto. This Command Center is the ninth thing —
+> it displays and governs, it doesn't decide."
 
 **Point at a degraded badge.**
 
 > "And it tells the truth. These say degraded because runs using them actually
 > failed. It also separates what we probed directly from what we inferred from
-> agent runs — OneDrive and GitHub are reached by the Operators with their own
-> credentials, so our backend has nothing to probe. Claiming a live check we
-> can't make would be a lie."
+> agent runs — the Operators reach OneDrive with their own credentials, so our
+> backend has nothing to probe. Claiming a live check we can't make would be a
+> lie."
 
 ---
 
-## 6:20 — 7:00 · Close
+## 2 · WORKBENCH — Thevesh · 60 seconds
 
-**Back to:** the Dashboard business outcomes.
+**Screen:** Workbench, **By Class** tab.
 
-> "Metrics: SLA compliance measured on each region's real business-hours
-> calendar — four hundred and twenty-eight of four hundred and sixty. CSAT three
-> point six seven. And you'll notice MTTR is blank, with the reason printed
+> "This is where the agent stops. Everything here is something it refused to do
+> alone, and each item arrives with the evidence that stopped it and what it
+> would have done instead.
+>
+> Thirty-six items, five different kinds of stop — a change awaiting board
+> approval, a rollback needing verification, a recurring problem needing a
+> permanent fix, a knowledge article the agent drafted, and a plain escalation.
+>
+> They're grouped by the classes the Operators clustered themselves. Deciding
+> one class writes that decision to every item in it."
+
+**Open a class. Point at the proposed fix.**
+
+> "The agent's own proposed permanent fix, the owning team, and how many tickets
+> it says are in this class.
+>
+> This read two hundred and forty-seven items until we noticed the queue was
+> counting how many times the agents had run, not how much work was waiting.
+> Sixty-eight change approvals standing there for five actual tickets. It's
+> thirty-six now, and that's the honest number."
+
+---
+
+## 3 · POLICIES — Zen Ben · 60 seconds
+
+**Screen:** AI Policies.
+
+> "Four policies, all editable here without touching code.
+>
+> The auto-remediation gate: act only if the knowledge base marks the fix safe
+> for automation and confidence clears the threshold. SLA and VIP: measured on
+> each region's working calendar, not raw elapsed time. Change control: an open
+> change request blocks remediation outright. Identity: if the requester can't
+> be resolved to exactly one person, stop."
+
+**Open the evaluation log.**
+
+> "Fifteen thousand two hundred and ninety-four evaluations logged. Each names
+> the rule that fired, the threshold in force at that moment, and what it was
+> compared against.
+>
+> That last part matters. Edit a threshold later and it never rewrites history —
+> so this is an auditable decision, not a black box. I'll change one in a minute
+> and you'll see the agent behave differently."
+
+---
+
+## 4 · WHAT THE AI DOES THAT A PERSON CANNOT — Thevesh · 60 seconds
+
+**Screen:** AI Insights.
+
+> "Four things here that a human service desk genuinely cannot do.
+>
+> **One.** Read four hundred and sixty tickets written over weeks and find the
+> fifteen problems underneath them. A person sees the ticket in front of them,
+> not the pattern across a month.
+>
+> **Two.** This incident — twenty-five tickets, twenty-two people, one root
+> cause, reported in four different languages. Nobody spots that across
+> languages in a live queue.
+>
+> **Three.** SLA on five regional calendars with different holidays and working
+> hours, recomputed for every ticket.
+>
+> **Four.** Five policy gates checked on every ticket, every time, at four in
+> the morning, with no fatigue and no shortcuts."
+
+**Open one insight.**
+
+> "And each comes with the next action, who owns it, and what it's worth. Where
+> the agent proposed the fix we label it as the agent's; where it didn't, we say
+> it's standard practice. You should always know which sentences came from the
+> machine."
+
+---
+
+## 5 · LIVE DEMO — Zen Ben · 4 to 5 minutes
+
+Four actions. Nothing already toured.
+
+### 5a · Run the agent — 90 seconds
+
+**Screen:** Supervity Auto. Submit the Orchestrator.
+
+> "That's a live cycle starting. While it runs, here's a completed one."
+
+**Switch to Dashboard, open a run timeline. Scroll.**
+
+> "Correlation and triage start at the same moment — same timestamp on both.
+> Then reconcile drops any ticket already inside an incident, so we don't work
+> the same outage twenty-three times.
+>
+> Every step shows the JSON the agent actually produced."
+
+**Point at a step's raw output.**
+
+> "In round one, this platform's chat told us things its own audit log
+> contradicted — invented ticket numbers. It did it again twice today. So we
+> render the audit record, never the prose. That isn't a design preference, it's
+> a scar."
+
+### 5b · A policy that bites — 75 seconds
+
+**Screen:** AI Policies → auto-remediation gate. Change 0.85 to 0.50. Save.
+
+> "No code, no redeploy. Logged with who changed it and when."
+
+**Switch to Auto Resolution → Re-decide under current policy.**
+
+> "That asks the same Operator on Auto to rule again, under the threshold now in
+> force."
+
+**Wait. Point at a changed verdict.**
+
+> "Different verdict, same agent, same ticket. And both evaluations stay on the
+> record, each naming the threshold it was made under."
+
+**Reset to 0.85.**
+
+### 5c · Decide a whole class — 75 seconds
+
+**Screen:** Workbench → By Class → open the largest class.
+
+> "Nine items, one problem. The agent proposes moving off manual drive mapping
+> to Group Policy with a self-service portal, and names the team that owns it."
+
+**Choose Approve, type a note, click Apply to all.**
+
+> "Written to every item separately, each recording that it was decided as a
+> class. So an auditor sees what I actually saw when I decided — not one row
+> standing in for nine."
+
+### 5d · Close the knowledge loop — 60 seconds
+
+**Screen:** Workbench → a drafted knowledge article.
+
+> "Here's the part I'd point you at.
+>
+> Most of the queue is blocked for one reason: no knowledge article covers the
+> problem, so the fix isn't marked safe for automation and the gate refuses.
+>
+> The agent noticed the gap and wrote the article itself. Then it stopped. It
+> will not publish to the knowledge base on its own."
+
+**Approve it.**
+
+> "A person publishes. Next cycle, that class has coverage and can resolve
+> automatically. That's the loop: the agent finds what it's missing, writes it,
+> and asks."
+
+---
+
+## 6 · SECRET SAUCE — Thevesh · 90 seconds
+
+**Screen:** Elimination.
+
+> "Back to where we started.
+>
+> Four hundred and sixty tickets. Fifteen root causes. Every ticket accounted
+> for — the same problem just arrives under a dozen different wordings.
+>
+> Ranked by what each one actually costs: volume, breaches, satisfaction damage.
+> Number one is shared drive access — forty-four tickets, eleven breached."
+
+**Open a row.**
+
+> "The permanent fix, the owning team, and the run that produced the finding. A
+> human approves before anything ships — the agent never pushes a systemic
+> change on its own."
+
+**Point at the two deflection numbers.**
+
+> "Two numbers, deliberately never blended. Forty tickets already collapsed into
+> single incidents — work avoided today. Four hundred and seventeen preventable
+> if these fixes ship — a forecast, and we label it as one. Adding them together
+> would make a better headline and a worse answer."
+
+**Close.**
+
+> "One last thing. Our MTTR is blank, on purpose, with the reason printed
 > underneath: no Operator reports resolution timestamps, and we don't compute
-> numbers our agents haven't produced. A dash is honest; a zero is a claim."
-
-**Close on the Elimination page.**
-
-> "Thirty-two tickets were held back today because three employees share a
-> display name and the agent wouldn't guess which person it was — even on a
-> Highest-priority ticket that had already breached SLA.
+> numbers our agents haven't produced. A dash is honest. A zero is a claim.
 >
 > That's the system we'd want running our service desk. Not the one that acts
-> fastest — the one that knows when to stop.
+> fastest — the one that knows when to stop, and tells you when it doesn't know.
 >
-> And the number to judge us on: four hundred and seventeen tickets that
-> don't need resolving, because they don't need to happen."
+> And the number we'd ask you to judge us on: four hundred and seventeen tickets
+> that don't need resolving, because they don't need to happen."
+
+Stop there. Nothing after it.
 
 ---
 
 ## Numbers to have memorised
 
+Read what is on screen if it differs — these move as agents run.
+
 | Figure | Value |
 |---|---|
-| Operators on Auto | 7, plus 1 Orchestrator |
+| Agents | 1 Orchestrator + 7 Operators |
 | Agent runs | 288 · 99.3% success |
-| Tickets decided individually | 153 · 2 auto-resolved · 308 still to run |
-| Auto-resolution rate | 1.3% · blocks share one cause |
-| Workbench classes | 22 classes · 14 individual |
-| Ticket classes found | 15, covering all 460 tickets |
-| Awaiting human approval | 5 classes |
-| Collapsed now | 40 tickets |
-| Preventable | 417 tickets |
-| Knowledge articles drafted | 8, awaiting approval |
-| Policy evaluations logged | 15,294 |
-| Insights | 10 — 4 critical, 6 warning |
-| Workbench | 36 open · 22 classes · 14 individual |
 | Integrations | 8 across 8 categories |
-| SLA on business hours | 428 of 460 (93%) |
-| CSAT | 3.67 / 5 from 76 responses |
-| Identity holds | 32 tickets |
+| Policies | 4 · 15,294 evaluations logged |
+| Workbench | 36 open · 22 in classes · 14 individual |
+| Ticket classes | 15, covering 460 tickets |
+| Deflection | 40 collapsed · 417 preventable |
+| Insights | 10 |
+| SLA on business hours | 428 of 460 · 93% |
+| CSAT | 3.67 from 76 responses |
+| Knowledge articles drafted | 8, awaiting approval |
 | Backend tests | 46 passing |
-
-## Tickets that are safe to open on camera
-
-| Ticket | What it shows |
-|---|---|
-| ITSM-2211 | Change approval blocked, with a real GitHub issue link |
-| ITSM-2216 | Rollback → forced reopen and verification |
-| ITSM-2217 | Repeat failure, single reporter — replace the asset |
-| ITSM-2386 | Escalated on VIP policy, clean reason |
-| ITSM-2273 | Escalated as an access change, clean reason |
-
-**ITSM-2040 is not in the Workbench** — an earlier draft of this script named it.
-Use the five above.
 
 ## If a judge pushes
 
 **"Is any of this hardcoded to the sample data?"**
-No ticket key, person, article id or expected count appears anywhere in the repo.
-Classes, fixes and rankings are computed at runtime from whatever data is
+No ticket key, person, article id or expected count appears anywhere in the
+repo. Classes, fixes and rankings are computed at runtime from whatever data is
 present. Field-name aliases are mapped because the agent generates its own key
 names, but no value is.
 
 **"How do you know the agent didn't make these numbers up?"**
-Every panel renders the structured output from the run and shows which run and
-which step produced it. Where an input is missing we say so — the ranking lists
-exactly which inputs each class lacked and confirms they contributed nothing.
+Every panel renders the structured output from the run and names the run and
+step that produced it. Where an input is missing we say so.
 
 **"Does it actually resolve tickets automatically?"**
-Yes, and we report the rate honestly: 3.0%. Thirty-three tickets have been
-decided one at a time by the evidence Operator; one cleared at 0.98 against five
-policy gates and was resolved, commented on in GitHub and emailed to the
-requester. Thirty-two were blocked — and seventeen of those for the same reason:
-the matched knowledge article isn't marked safe for automation. That's not the
-agent being timid, it's the knowledge base not covering the problem, which is
-exactly what the Elimination Backlog ranks. Ship those articles and the rate
-moves. We'd rather report 3% we can trace than a bigger number we can't.
+Yes, and we report the rate honestly. Tickets are decided one at a time by the
+evidence Operator; the ones that clear are resolved, commented on in GitHub and
+emailed to the requester. Most are blocked for one reason — no auto-safe
+knowledge article — which is exactly what the Elimination Backlog ranks and what
+those drafted articles fix. Ship them and the rate moves.
 
 **"Why one ticket at a time and not the batch?"**
 Because Auto returns zero bytes from a sub-workflow call to its parent. The
 Orchestrator never receives per-ticket confidence, so it escalates everything on
-a 0.00 that was never produced. We tried six times across five approaches;
-Supervity's own chat eventually said its planner summarises instructions rather
-than writing the code. So the Command Center calls the same Operators over the
-same public API, in the same order, and records what they say. It sequences; it
-does not decide.
+a 0.00 that was never produced. Six attempts, five approaches; Supervity's own
+chat eventually said its planner summarises instructions rather than writing the
+code. So the Command Center calls the same Operators over the same public API,
+in the same order, and records what they say. It sequences; it does not decide.
 
 **"Why is MTTR blank?"**
-Because no Operator reports resolution timestamps yet. We could have inferred one
-here, but then the Command Center and the agents would disagree about the same
-number. A dash is honest.
+No Operator reports resolution timestamps. We could have inferred one, but then
+the Command Center and the agents would disagree about the same number.
 
 **"What's the architecture?"**
-`ARCHITECTURE.md` in the repo — the system, the agent cycle, how a policy edit
-reaches the agent, and the mirrored schema, as diagrams.
+`ARCHITECTURE.md` — the system, the agent cycle, how a policy edit reaches the
+agent, and the mirrored schema, as diagrams.
 
 **"What would you do next?"**
-Close the Operator output gap so the batch cycle can auto-resolve end to end, and
-add Ghost Run — replay the agent's decisions against the historical backlog to
-show what would have been saved.
+Close the Operator output gap so the batch cycle can auto-resolve end to end,
+and add Ghost Run — replay the agent's decisions against the historical backlog
+to show what would have been saved.
+
+## If something breaks live
+
+- **Auto is slow** — skip 5a's live trigger, open a completed run instead.
+- **A page is blank** — press Sync from Auto; it repopulates from the mirror.
+- **The whole app is down** — the deck, `docs/Service-Desk-Command-Center.pptx`,
+  carries every number and both diagrams.
