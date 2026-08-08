@@ -10,6 +10,7 @@ import { CardWatermark } from '@/components/ui/card-watermark'
 import { Icons } from '@/components/ui/icons'
 import { formatRelative } from '@/lib/agent'
 import { cn } from '@/lib/utils'
+import { StatInfo } from '@/components/ui/stat-info'
 
 /**
  * One ticket's verdict, exactly as the Operator on Auto reported it.
@@ -65,17 +66,22 @@ function Metric({
   value,
   tone,
   hint,
+  explain,
 }: {
   label: string
   value: string
   tone?: string
   hint?: string
+  explain?: React.ReactNode
 }) {
   return (
     <Card className='relative h-full overflow-hidden'>
       <CardWatermark opacity={3} scale={0.9} />
       <CardContent className='relative z-10 p-5'>
-        <p className='text-micro uppercase text-brand-muted'>{label}</p>
+        <div className='flex items-start justify-between gap-2'>
+          <p className='text-micro uppercase text-brand-muted'>{label}</p>
+          {explain && <StatInfo>{explain}</StatInfo>}
+        </div>
         <p
           className={cn(
             'mt-2 font-display text-[2rem] font-bold leading-none',
@@ -332,20 +338,24 @@ export function DecisionsPanel({ embedded = false }: { embedded?: boolean }) {
       <motion.div className='grid grid-cols-2 gap-4 lg:grid-cols-4' variants={itemVariants}>
         <Metric
           label='Tickets decided'
+          explain="Tickets the evidence Operator has ruled on individually. Each is a real run on Supervity Auto, not a calculation done here."
           value={loading && !data ? '…' : String(data?.tickets_decided ?? 0)}
         />
         <Metric
           label='Auto-resolved'
+          explain="Tickets that cleared every policy gate. Cleared is a decision — see the Dashboard for how many were actually acted on."
           value={loading && !data ? '…' : String(data?.auto_resolved ?? 0)}
           tone='text-emerald-600'
         />
         <Metric
           label='Escalated'
+          explain="Tickets the agent refused to act on alone. Open any row to see which gate stopped it and what it observed."
           value={loading && !data ? '…' : String(data?.escalated ?? 0)}
           tone='text-amber-600'
         />
         <Metric
           label='Auto-resolution rate'
+          explain="Cleared as a share of decided. From single-ticket runs rather than one full cycle, which is a weaker claim and labelled as such."
           value={rate === null || rate === undefined ? dash : `${rate}%`}
           hint={
             data?.decisions_without_confidence

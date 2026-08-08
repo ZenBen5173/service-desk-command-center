@@ -10,6 +10,7 @@ import { CardWatermark } from '@/components/ui/card-watermark'
 import { Icons } from '@/components/ui/icons'
 import { agentApi, formatRelative } from '@/lib/agent'
 import { cn } from '@/lib/utils'
+import { StatInfo } from '@/components/ui/stat-info'
 
 /**
  * One observation the agents made about the operation.
@@ -93,12 +94,25 @@ const TYPE_META: Record<Insight['type'], { label: string; icon: keyof typeof Ico
   recommendation: { label: 'Recommendation', icon: 'lightbulb' },
 }
 
-function Metric({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function Metric({
+  label,
+  value,
+  tone,
+  explain,
+}: {
+  label: string
+  value: string
+  tone?: string
+  explain?: React.ReactNode
+}) {
   return (
     <Card className='relative h-full overflow-hidden'>
       <CardWatermark opacity={3} scale={0.9} />
       <CardContent className='relative z-10 p-5'>
-        <p className='text-micro uppercase text-brand-muted'>{label}</p>
+        <div className='flex items-start justify-between gap-2'>
+          <p className='text-micro uppercase text-brand-muted'>{label}</p>
+          {explain && <StatInfo>{explain}</StatInfo>}
+        </div>
         <p
           className={cn(
             'mt-2 font-display text-[2rem] font-bold leading-none',
@@ -388,20 +402,24 @@ export default function InsightsPage() {
       >
         <Metric
           label='Insights'
+          explain="Observations assembled from what the Operators reported. Nothing here is inferred by this app — an insights page that invents patterns is worse than an empty one."
           value={loading && !data ? '…' : String(data?.counts.total ?? 0)}
         />
         <Metric
           label='Critical'
+          explain="Major incidents forming, and SLA breaches that have already happened."
           value={loading && !data ? '…' : String(data?.counts.critical ?? 0)}
           tone='text-red-600'
         />
         <Metric
           label='Warning'
+          explain="Recurring problems and decisions waiting on a person. Costly, but nothing is on fire."
           value={loading && !data ? '…' : String(data?.counts.warning ?? 0)}
           tone='text-amber-600'
         />
         <Metric
           label='Info'
+          explain="Observations worth knowing that need no action today."
           value={loading && !data ? '…' : String(data?.counts.info ?? 0)}
           tone='text-blue-600'
         />

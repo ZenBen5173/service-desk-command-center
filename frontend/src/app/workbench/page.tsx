@@ -19,6 +19,7 @@ import {
   type WorkbenchSummary,
 } from '@/lib/workbench'
 import { cn } from '@/lib/utils'
+import { StatInfo } from '@/components/ui/stat-info'
 import { DecisionsPanel } from '@/components/ai/DecisionsPanel'
 
 const containerVariants = {
@@ -256,16 +257,21 @@ function Metric({
   label,
   value,
   hint,
+  explain,
 }: {
   label: string
   value: string
   hint?: string
+  explain?: React.ReactNode
 }) {
   return (
     <Card className='relative h-full overflow-hidden'>
       <CardWatermark opacity={3} scale={0.9} />
       <CardContent className='relative z-10 p-5'>
-        <p className='text-micro uppercase text-brand-muted'>{label}</p>
+        <div className='flex items-start justify-between gap-2'>
+          <p className='text-micro uppercase text-brand-muted'>{label}</p>
+          {explain && <StatInfo>{explain}</StatInfo>}
+        </div>
         <p className='mt-2 font-display text-[2rem] font-bold leading-none text-brand-navy'>
           {value}
         </p>
@@ -613,16 +619,19 @@ export default function WorkbenchPage() {
       >
         <Metric
           label='Awaiting a human'
+          explain="Items an Operator escalated rather than acting on. One open item per subject — the same escalation re-reported by a later cycle is not new work."
           value={loading && !summary ? '…' : String(summary?.open ?? 0)}
           hint='blocked until someone decides'
         />
         <Metric
           label='Resolved'
+          explain="Items a person has decided. Their decision stands: a later run reporting the same subject never reopens it."
           value={loading && !summary ? '…' : String(summary?.resolved ?? 0)}
           hint='decisions on the record'
         />
         <Metric
           label='Exception types'
+          explain="Distinct reasons the agent stopped — change approval, rollback verification, a recurring class, a drafted article, or a plain escalation."
           value={
             loading && !summary
               ? '…'
@@ -632,6 +641,7 @@ export default function WorkbenchPage() {
         />
         <Metric
           label='Avg time to decision'
+          explain="From the moment an Operator raised the item to the moment a person decided it. Blank until something has been decided."
           value={
             loading && !summary
               ? '…'

@@ -8,6 +8,7 @@ import { CardWatermark } from '@/components/ui/card-watermark'
 import { Icons } from '@/components/ui/icons'
 import { businessApi, type BusinessMetrics } from '@/lib/business'
 import { cn } from '@/lib/utils'
+import { StatInfo } from '@/components/ui/stat-info'
 
 /**
  * The four judged metrics, plus deflection.
@@ -24,6 +25,7 @@ function Tile({
   source,
   accent,
   muted,
+  explain,
 }: {
   label: string
   value: string
@@ -32,12 +34,16 @@ function Tile({
   source?: string
   accent?: boolean
   muted?: boolean
+  explain?: React.ReactNode
 }) {
   return (
     <Card className='relative h-full overflow-hidden'>
       <CardWatermark opacity={3} scale={0.9} />
       <CardContent className='relative z-10 flex h-full flex-col p-4'>
-        <p className='text-micro uppercase text-brand-muted'>{label}</p>
+        <div className='flex items-start justify-between gap-2'>
+          <p className='text-micro uppercase text-brand-muted'>{label}</p>
+          {explain && <StatInfo>{explain}</StatInfo>}
+        </div>
         <p
           className={cn(
             'mt-1.5 font-display text-[1.75rem] font-bold leading-none tracking-tight',
@@ -112,6 +118,7 @@ export function BusinessOutcomes({ className }: { className?: string }) {
       >
         <Tile
           label='CSAT'
+          explain="Average satisfaction score as the CSAT Operator reported it, with the number of responses behind it. Not every ticket gets a response."
           value={csat ? csat.average.toFixed(2) : dash}
           suffix={csat ? '/5' : undefined}
           muted={!csat}
@@ -125,6 +132,7 @@ export function BusinessOutcomes({ className }: { className?: string }) {
 
         <Tile
           label='SLA on Calendar'
+          explain="Measured on each region's working calendar, including holidays and timezone, rather than raw elapsed time. The rest fell back to elapsed time and are counted separately."
           value={sla ? String(sla.authoritative_pct) : dash}
           suffix={sla ? '%' : undefined}
           muted={!sla}
@@ -138,6 +146,7 @@ export function BusinessOutcomes({ className }: { className?: string }) {
 
         <Tile
           label='Auto-resolution'
+          explain="Tickets the agent cleared as a share of those it decided. Clearing is a decision; the hint shows how many were actually acted on."
           value={resolution ? String(resolution.auto_resolution_rate_pct) : dash}
           suffix={resolution ? '%' : undefined}
           muted={!resolution}
@@ -157,6 +166,7 @@ export function BusinessOutcomes({ className }: { className?: string }) {
 
         <Tile
           label='Collapsed Now'
+          explain="Tickets that shared one root cause and became a single incident with one response. Work already avoided, not a forecast, and never added to Preventable."
           value={
             deflection?.collapsed_now
               ? String(deflection.collapsed_now.count)
@@ -174,6 +184,7 @@ export function BusinessOutcomes({ className }: { className?: string }) {
 
         <Tile
           label='Preventable'
+          explain="Tickets a proposed permanent fix would stop happening. A forecast, conditional on a human approving the fix, and deliberately kept apart from what is already avoided."
           value={
             deflection?.preventable ? String(deflection.preventable.count) : dash
           }

@@ -10,6 +10,7 @@ import { CardWatermark } from '@/components/ui/card-watermark'
 import { Icons } from '@/components/ui/icons'
 import { formatRelative } from '@/lib/agent'
 import { cn } from '@/lib/utils'
+import { StatInfo } from '@/components/ui/stat-info'
 
 interface Integration {
   key: string
@@ -71,12 +72,25 @@ const STATUS_DOT: Record<Integration['status'], string> = {
   unknown: 'bg-slate-400',
 }
 
-function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Metric({
+  label,
+  value,
+  hint,
+  explain,
+}: {
+  label: string
+  value: string
+  hint?: string
+  explain?: React.ReactNode
+}) {
   return (
     <Card className='relative h-full overflow-hidden'>
       <CardWatermark opacity={3} scale={0.9} />
       <CardContent className='relative z-10 p-5'>
-        <p className='text-micro uppercase text-brand-muted'>{label}</p>
+        <div className='flex items-start justify-between gap-2'>
+          <p className='text-micro uppercase text-brand-muted'>{label}</p>
+          {explain && <StatInfo>{explain}</StatInfo>}
+        </div>
         <p className='mt-2 font-display text-[2rem] font-bold leading-none text-brand-navy'>
           {value}
         </p>
@@ -229,21 +243,25 @@ export default function DataManagerPage() {
       >
         <Metric
           label='Integrations'
+          explain="Discovered from the services each workflow on Auto declares, not from a list typed here. Connect something new there and it appears."
           value={loading && !totals ? '…' : String(totals?.count ?? 0)}
           hint={`across ${totals?.categories ?? 0} categories`}
         />
         <Metric
           label='Healthy'
+          explain="Nothing using this service has failed in the last hour. The card shows the full history, so an older failure is still visible."
           value={loading && !totals ? '…' : String(totals?.healthy ?? 0)}
           hint='working right now'
         />
         <Metric
           label='Degraded'
+          explain="Something using this service failed within the last hour. Older failures stay in the counts but no longer set the status."
           value={loading && !totals ? '…' : String(totals?.degraded ?? 0)}
           hint='some recent runs failed'
         />
         <Metric
           label='Down'
+          explain="Every recent run using this service failed. Not the same as degraded, which is some."
           value={loading && !totals ? '…' : String(totals?.down ?? 0)}
           hint='not reachable'
         />
