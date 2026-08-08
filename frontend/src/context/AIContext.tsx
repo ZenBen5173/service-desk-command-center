@@ -53,6 +53,18 @@ export function useAI(): AIContextValue {
   return ctx
 }
 
+/**
+ * The AI context if there is one, otherwise null.
+ *
+ * For chrome that renders on pages outside the provider — Next prerenders its
+ * own error and 404 pages without the app's providers, and a hook that throws
+ * there fails the whole production build with a message about `<Html>` that
+ * says nothing about the real cause.
+ */
+export function useAIOptional(): AIContextValue | null {
+  return useContext(AIContext)
+}
+
 // ============================================================================
 // Provider
 // ============================================================================

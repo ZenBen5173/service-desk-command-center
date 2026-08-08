@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useSession } from 'next-auth/react'
-import { useAI } from '@/context/AIContext'
+import { useAIOptional } from '@/context/AIContext'
 
 // Sidebar context for collapse state
 interface SidebarContextType {
@@ -110,31 +110,30 @@ function NavLink({
   opensManager,
 }: NavLinkProps) {
   const pathname = usePathname()
-  const { openManager, isManagerOpen } = useAI()
-  const isActive = opensManager ? isManagerOpen : pathname === href
+  // Optional: Next prerenders its 404 and error pages without the app's
+  // providers, and a hook that throws there fails the whole production build.
+  const ai = useAIOptional()
+  const isActive = opensManager ? Boolean(ai?.isManagerOpen) : pathname === href
 
   // The AI Manager is a panel, not a route. It still belongs in the nav — it is
   // one of the five screens the brief asks for, and a header button is easy to
   // miss — so it renders as a nav item that opens the panel.
-  const Wrapper = opensManager ? 'button' : Link
-  const wrapperProps = opensManager
-    ? { type: 'button' as const, onClick: openManager }
-    : { href }
+  // Written as two branches rather than one element with a swapped tag: a Link
+  // and a button take different props, and the version that spread them
+  // dynamically passed in dev and failed the production build.
+  const className = cn(
+    opensManager && 'w-full text-left',
+    'group relative flex items-center gap-3 rounded-xl px-3 py-2.5',
+    'text-sm font-medium',
+    'transition-all duration-200 ease-out',
+    isActive
+      ? 'bg-brand-navy text-white shadow-soft'
+      : 'text-brand-muted hover:translate-x-1 hover:bg-brand-cornflower/10 hover:text-brand-navy',
+    isCollapsed && 'justify-center px-2 hover:translate-x-0'
+  )
 
-  const linkContent = (
-    <Wrapper
-      {...(wrapperProps as never)}
-      className={cn(
-        opensManager && 'w-full text-left',
-        'group relative flex items-center gap-3 rounded-xl px-3 py-2.5',
-        'text-sm font-medium',
-        'transition-all duration-200 ease-out',
-        isActive
-          ? 'bg-brand-navy text-white shadow-soft'
-          : 'text-brand-muted hover:translate-x-1 hover:bg-brand-cornflower/10 hover:text-brand-navy',
-        isCollapsed && 'justify-center px-2 hover:translate-x-0'
-      )}
-    >
+  const inner = (
+    <>
       <Icon
         strokeWidth={1.5}
         className={cn(
@@ -147,7 +146,6 @@ function NavLink({
 
       {!isCollapsed && <span className='truncate'>{children}</span>}
 
-      {/* Badge */}
       {badge !== undefined && badge > 0 && (
         <span
           className={cn(
@@ -163,7 +161,17 @@ function NavLink({
           {badge > 99 ? '99+' : badge}
         </span>
       )}
-    </Wrapper>
+    </>
+  )
+
+  const linkContent = opensManager ? (
+    <button type='button' onClick={() => ai?.openManager()} className={className}>
+      {inner}
+    </button>
+  ) : (
+    <Link href={href} className={className}>
+      {inner}
+    </Link>
   )
 
   // Wrap with tooltip when collapsed
