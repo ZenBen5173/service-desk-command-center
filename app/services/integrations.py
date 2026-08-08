@@ -92,7 +92,11 @@ EVIDENCE_WINDOW = timedelta(days=45)
 # span meant one failure kept a service amber for six weeks. Outlook read
 # degraded on a single failure from this morning while six hundred runs had
 # succeeded since.
-FAILURE_RELEVANCE = timedelta(hours=12)
+#
+# An hour: long enough that a service failing now is still amber while someone
+# is looking at it, short enough that a recovery shows up while they are still
+# on the page.
+FAILURE_RELEVANCE = timedelta(hours=1)
 
 
 def _humanise(service_key: str) -> dict[str, str]:
