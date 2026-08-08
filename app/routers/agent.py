@@ -246,8 +246,18 @@ def agent_metrics(db: Session = Depends(get_db)):
     the counts are zero and `has_data` is false — the UI must show that state
     rather than a placeholder number.
     """
-    runs = db.query(AgentRun).all()
+    all_runs = db.query(AgentRun).all()
     workflows = db.query(AgentWorkflow).all()
+
+    # Count only runs belonging to a workflow that still exists on Auto. The
+    # mirror keeps runs from workflows since deleted — earlier rounds, discarded
+    # experiments — and attributing those to the current agent roster overstates
+    # it. They are reported separately rather than silently dropped, because a
+    # figure that quietly excludes something is the failure this whole build
+    # argues against.
+    live_ids = {w.auto_id for w in workflows}
+    runs = [r for r in all_runs if r.auto_workflow_id in live_ids]
+    retired_runs = len(all_runs) - len(runs)
 
     total = len(runs)
     completed = [r for r in runs if (r.status or "").lower() == "completed"]
@@ -285,6 +295,9 @@ def agent_metrics(db: Session = Depends(get_db)):
     return {
         "has_data": total > 0,
         "total_runs": total,
+        # Runs whose workflow no longer exists on Auto, excluded from every
+        # figure above and surfaced so the exclusion is visible.
+        "retired_workflow_runs": retired_runs,
         "completed_runs": len(completed),
         "failed_runs": len(failed),
         "running_runs": len(running),
