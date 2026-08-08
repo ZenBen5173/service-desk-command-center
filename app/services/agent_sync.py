@@ -5,6 +5,7 @@ Read-only against Auto. Idempotent: syncing twice updates rows rather than
 duplicating them, so it is safe to call from a refresh button during a demo.
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -301,6 +302,10 @@ async def sync_all(db: Session, client: SupervityClient, timeline_limit: int = 2
     synced = 0
     unavailable = 0
     for run in pending:
+        # Timeline work is synchronous once the response lands, so a long batch
+        # holds the event loop and the health endpoint stops answering. Yielding
+        # between runs lets other requests through.
+        await asyncio.sleep(0)
         try:
             outcome = await sync_run_timeline(db, client, run.auto_run_id)
             if outcome.get("unavailable"):

@@ -28,7 +28,18 @@ DEFAULT_INTERVAL_SECONDS = 180
 
 # Timelines are one request each, so a periodic sync fetches only what is new.
 # The pending count is reported by the sync itself, so nothing is lost silently.
-DEFAULT_TIMELINE_LIMIT = 15
+#
+# Kept small deliberately. The database work in a sync is synchronous, so a
+# large batch holds the event loop and the health endpoint stops answering.
+# On a single free-tier worker that reads as a dead service: the platform's
+# health check times out after five seconds, restarts the container, and the
+# restart runs the sync again. A sync that takes the service down is worse than
+# a sync that runs a few runs behind.
+DEFAULT_TIMELINE_LIMIT = 5
+
+# Long enough for the service to come up, answer its first health check and be
+# marked live before any of this starts.
+STARTUP_DELAY_SECONDS = 90
 
 _state: dict = {
     "enabled": False,
@@ -81,8 +92,13 @@ async def _sync_once() -> None:
 
 
 async def _loop(interval: int) -> None:
-    # A first sync straight away, so a cold start is current rather than waiting
-    # out a full interval with an empty screen.
+    # Let the service come up and pass its first health check before doing any
+    # work. Syncing immediately on startup meant the health endpoint could not
+    # answer within its timeout, so the platform restarted the container, which
+    # started another immediate sync — a restart loop that took the live site
+    # down while looking like a database problem.
+    await asyncio.sleep(STARTUP_DELAY_SECONDS)
+
     while True:
         try:
             await _sync_once()
