@@ -219,6 +219,52 @@ def pending_ticket_keys(
             if len(keys) >= limit:
                 break
 
+    # Routing decisions and the Workbench are the tickets that reached a
+    # decision point. They are a fraction of the dataset — the Orchestrator
+    # routes a handful per cycle — so on their own they cap the pipeline at a
+    # few dozen tickets while hundreds sit unexamined in the Operators' own
+    # output.
+    #
+    # Anything the agents mentioned is a ticket the agents saw. Read the keys
+    # out of the mirrored output and work through them too, after the tickets
+    # that were explicitly routed. No key is invented: every one appears
+    # verbatim in something an Operator emitted.
+    #
+    # Scavenging text for anything ticket-shaped also picks up knowledge
+    # articles and incident records, which share the shape. The prefixes worth
+    # keeping are the ones the agents actually route tickets under — read from
+    # the explicit sources above rather than written down here, so a dataset
+    # using different prefixes works without a change.
+    # Taken from every ticket the agents have routed or already decided, not
+    # only the ones still pending — once the pending list empties, the pending
+    # list is no longer evidence of anything.
+    prefixes = {
+        k.split("-", 1)[0].upper() for k in list(keys) + list(seen) if "-" in k
+    }
+
+    if len(keys) < limit and prefixes:
+        for activity, run in rows:
+            payloads = [_parse_output(activity.outputs)]
+            if activity.artifact_data:
+                payloads.extend(activity.artifact_data.values())
+            for payload in payloads:
+                if payload is None:
+                    continue
+                for match in TICKET_KEY.finditer(json.dumps(payload, default=str)):
+                    key = match.group(0)
+                    if key.split("-", 1)[0].upper() not in prefixes:
+                        continue
+                    if key not in seen:
+                        seen.add(key)
+                        keys.append(key)
+                        source = source or "the Operators' mirrored output"
+                    if len(keys) >= limit:
+                        break
+                if len(keys) >= limit:
+                    break
+            if len(keys) >= limit:
+                break
+
     return keys[:limit], source
 
 
