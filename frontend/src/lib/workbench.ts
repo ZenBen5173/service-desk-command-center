@@ -145,6 +145,22 @@ export const EXCEPTION_META: Record<
     tone: 'bg-slate-50 text-slate-600 border-slate-200',
     meaning: 'The Operator escalated this rather than acting on it.',
   },
+  knowledge_draft: {
+    label: 'Article drafted',
+    tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    meaning:
+      'No article covered this problem, so the agent wrote one and stopped. ' +
+      'Publishing it is a human decision — the agent never adds to the ' +
+      'knowledge base on its own. Most of this queue is blocked because no ' +
+      'article exists, so approving these is what unblocks it.',
+  },
+  RECURRING_CLASS: {
+    label: 'Recurring problem',
+    tone: 'bg-violet-50 text-violet-700 border-violet-200',
+    meaning:
+      'The same problem keeps arriving. The agent proposes a permanent fix ' +
+      'rather than working the tickets again.',
+  },
 }
 
 export function exceptionMeta(type: string | null) {

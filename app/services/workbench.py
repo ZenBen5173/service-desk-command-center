@@ -33,6 +33,15 @@ EXCEPTION_COLLECTION_KEYS = (
     "awaiting_approval",
     "needs_human",
     "workbench_items",
+    # A drafted knowledge article is an escalation like any other: the agent has
+    # written something and will not publish it alone. Most of the queue is
+    # blocked because no article covers the problem, so the article the agent
+    # wrote to close that gap belongs in front of a person, not in a file
+    # nobody opens.
+    "drafted_articles",
+    "draft_articles",
+    "knowledge_drafts",
+    "proposed_articles",
 )
 
 # A hint at what kind of exception each collection represents, used only when
@@ -45,6 +54,10 @@ COLLECTION_TYPE_HINT: dict[str, str] = {
     "human_review": "human_review",
     "human_review_items": "human_review",
     "needs_human": "human_review",
+    "drafted_articles": "knowledge_draft",
+    "draft_articles": "knowledge_draft",
+    "knowledge_drafts": "knowledge_draft",
+    "proposed_articles": "knowledge_draft",
 }
 
 FIELD_ALIASES: dict[str, tuple[str, ...]] = {
@@ -54,6 +67,10 @@ FIELD_ALIASES: dict[str, tuple[str, ...]] = {
         "subject_ref",
         "ticket",
         "cluster_key",
+        # A drafted article is about a class, and the Knowledge Operator names
+        # that class under "cluster" rather than "cluster_key".
+        "cluster",
+        "cluster_name",
         "change_key",
         "key",
         "id",
@@ -172,6 +189,11 @@ def _build_title(raw: dict, subject: str | None, exception_type: str | None) -> 
     explicit = _as_text(_first(raw, FIELD_ALIASES["title"]), 300)
     if explicit:
         return explicit
+    # A drafted article carries only the class it covers and where it was
+    # written. "Agent escalation" tells a reader nothing about what they are
+    # being asked to approve.
+    if exception_type == "knowledge_draft" and subject:
+        return f"Publish a knowledge article for: {subject}"
     if subject and exception_type:
         return f"{subject} — {exception_type.replace('_', ' ')}"
     if subject:
