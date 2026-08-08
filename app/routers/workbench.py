@@ -7,6 +7,7 @@ that decision is recorded against the agent's own recommendation.
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
@@ -106,6 +107,171 @@ def summary(db: Session = Depends(get_db)):
 def ingest(db: Session = Depends(get_db)):
     """Pull escalations out of mirrored agent activity into the queue."""
     return workbench_service.ingest_exceptions(db)
+
+
+# ---------------------------------------------------------------------------
+# Groups — one decision covering everything the agent judged to be one problem
+# ---------------------------------------------------------------------------
+#
+# A queue of 247 items is not 247 decisions. Most of them are the same problem
+# arriving under different ticket numbers, and the Operators already said so:
+# every item they clustered carries the cluster it belongs to. Grouping on that
+# key lets a person decide once and have it apply to the whole class.
+#
+# The grouping is the agent's, not ours. Items the Operators did not cluster —
+# change approvals and rollback verifications, which each concern a specific
+# change — stay individual, because deciding sixty-eight separate change
+# requests with one click would be a worse error than the tedium it saves.
+
+
+# Filler the Operators append to cluster names — "unified", "cluster", "issues"
+# — which varies between runs and split the same class into several groups.
+# Stripping it is text normalisation, not clustering: two names that differ only
+# by these words are the same name. Deciding that two *differently named*
+# classes mean the same thing is a judgement about meaning, and that belongs to
+# an Operator on Auto, so it is not done here.
+_GROUP_FILLER = re.compile(r"\b(unified|cluster|class|group|incidents?|issues?)\b")
+_NON_WORD = re.compile(r"[^a-z0-9]+")
+
+
+def _group_key(row: WorkbenchException) -> str | None:
+    raw = (row.context or {}).get("cluster_key")
+    if not raw:
+        return None
+    text = _NON_WORD.sub(" ", str(raw).lower())
+    text = _GROUP_FILLER.sub("", text)
+    return re.sub(r"\s+", " ", text).strip() or None
+
+
+@router.get("/groups")
+def list_groups(
+    status: str = Query("open"),
+    db: Session = Depends(get_db),
+):
+    """Open items gathered into the classes the Operators put them in.
+
+    Returns the groups, plus a count of the items that carry no cluster and so
+    must be decided one at a time. That count is reported rather than folded
+    into a group, because a number that quietly includes something it should
+    not is the failure this build argues against.
+    """
+    rows = db.query(WorkbenchException).filter(WorkbenchException.status == status).all()
+
+    groups: dict[str, dict] = {}
+    ungrouped = 0
+    for row in rows:
+        key = _group_key(row)
+        if key is None:
+            ungrouped += 1
+            continue
+        context = row.context or {}
+        entry = groups.setdefault(
+            key,
+            {
+                "group_key": key,
+                "title": context.get("summary") or row.title,
+                "exception_type": row.exception_type,
+                "reason": row.reason,
+                "affected_system": context.get("affected_system"),
+                "owning_team": context.get("owning_team"),
+                "proposed_fix": context.get("proposed_fix"),
+                "kb_status": context.get("kb_status"),
+                # What the Operator said the whole class is worth, kept separate
+                # from how many items happen to be queued here.
+                "class_size_reported_by_agent": context.get("member_count"),
+                "items": [],
+                "tickets": [],
+                "workflow_name": row.workflow_name,
+            },
+        )
+        entry["items"].append(row.id)
+        if row.subject_ref and row.subject_ref not in entry["tickets"]:
+            entry["tickets"].append(row.subject_ref)
+
+    ordered = sorted(groups.values(), key=lambda g: len(g["items"]), reverse=True)
+    for group in ordered:
+        group["item_count"] = len(group["items"])
+
+    return {
+        "groups": ordered,
+        "group_count": len(ordered),
+        "items_in_groups": sum(g["item_count"] for g in ordered),
+        # Change approvals and rollback verifications concern one specific
+        # change each. The Operators did not cluster them, so neither do we.
+        "ungrouped_items": ungrouped,
+        "ungrouped_note": (
+            "These carry no cluster from any Operator — each concerns a specific "
+            "change or verification and is decided on its own."
+        ),
+        "status": status,
+    }
+
+
+@router.post("/groups/{group_key}/resolve")
+def resolve_group(
+    group_key: str,
+    payload: dict = Body(...),
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    """Apply one decision to every open item in a class.
+
+    Each item is still written individually, with the same note and a record
+    that it was decided as part of a group — so the audit trail shows what a
+    person actually saw when they decided, not a single row standing in for
+    many.
+    """
+    resolution = str(payload.get("resolution", "")).strip().lower()
+    if resolution not in VALID_RESOLUTIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"resolution must be one of {sorted(VALID_RESOLUTIONS)}",
+        )
+
+    note = payload.get("note")
+    if resolution == "modify" and not note:
+        raise HTTPException(
+            status_code=400,
+            detail="A note is required when modifying the agent's recommendation, "
+            "so the change is on the record.",
+        )
+
+    rows = [
+        row
+        for row in db.query(WorkbenchException)
+        .filter(WorkbenchException.status == "open")
+        .all()
+        if _group_key(row) == group_key
+    ]
+    if not rows:
+        raise HTTPException(status_code=404, detail="No open items in that group")
+
+    actor = _actor(user)
+    now = datetime.now(timezone.utc)
+    group_note = f"Decided as part of the class '{group_key}' ({len(rows)} items)."
+    for row in rows:
+        row.resolution = resolution
+        row.resolution_note = f"{note}\n\n{group_note}" if note else group_note
+        row.resolved_by = actor
+        row.resolved_at = now
+        row.status = "open" if resolution == "more_info" else "resolved"
+
+    db.commit()
+    log.info(
+        "Workbench group %s resolved as %s across %d items by %s",
+        group_key,
+        resolution,
+        len(rows),
+        actor,
+    )
+    return {
+        "group_key": group_key,
+        "resolution": resolution,
+        "items_decided": len(rows),
+        "tickets": [r.subject_ref for r in rows if r.subject_ref],
+        "resolved_by": actor,
+        "resolved_at": now.isoformat(),
+    }
 
 
 @router.get("/exceptions/{exception_id}")
