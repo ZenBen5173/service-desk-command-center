@@ -491,6 +491,7 @@ async def sweep(
     limit: int = 20,
     concurrency: int = 3,
     resolve: bool = True,
+    redecide: bool = False,
 ) -> dict:
     """Ask the evidence Operator about each pending ticket, one call per ticket.
 
@@ -509,13 +510,16 @@ async def sweep(
             ),
         }
 
-    keys, queue_source = pending_ticket_keys(db, limit)
+    keys, queue_source = pending_ticket_keys(db, limit, skip_decided=not redecide)
     if not keys:
         return {
             "ran": False,
             "reason": (
-                "No routed tickets have been mirrored yet, so there are no ticket "
-                "keys to ask about. Run the Orchestrator, then sync."
+                "No routed tickets have been mirrored yet, so there are no "
+                "ticket keys to ask about. Run the Orchestrator, then sync."
+                if redecide
+                else "Every routed ticket already has a verdict. Use re-decide "
+                "to ask again under the thresholds now in force."
             ),
         }
 

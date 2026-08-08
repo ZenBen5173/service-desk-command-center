@@ -346,6 +346,11 @@ async def resolution_sweep(
     limit: int = Query(20, ge=1, le=100),
     concurrency: int = Query(3, ge=1, le=5),
     resolve: bool = Query(True),
+    redecide: bool = Query(
+        False,
+        description="Ask again about tickets already decided, under the "
+        "thresholds now in force.",
+    ),
     db: Session = Depends(get_db),
     client: SupervityClient = Depends(get_supervity_client),
 ):
@@ -363,7 +368,12 @@ async def resolution_sweep(
     """
     try:
         return await resolution.sweep(
-            db, client, limit=limit, concurrency=concurrency, resolve=resolve
+            db,
+            client,
+            limit=limit,
+            concurrency=concurrency,
+            resolve=resolve,
+            redecide=redecide,
         )
     except SupervityNotConfigured as exc:
         raise HTTPException(status_code=503, detail=str(exc))
