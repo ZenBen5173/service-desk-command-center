@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useSession } from 'next-auth/react'
+import { useAI } from '@/context/AIContext'
 
 // Sidebar context for collapse state
 interface SidebarContextType {
@@ -50,6 +51,8 @@ interface NavItem {
   label: string
   icon: React.ElementType
   adminOnly?: boolean
+  /** Opens the AI Manager panel instead of navigating. */
+  opensManager?: boolean
 }
 
 interface NavSection {
@@ -57,22 +60,27 @@ interface NavSection {
   items: NavItem[]
 }
 
+// Grouped so the five screens the brief asks for are visible together and in
+// its order, rather than mixed in with the ones we added. Eight flat items gave
+// no signal about which was which, and the AI Manager was reachable only from a
+// button in the header — a required screen that a reader could miss entirely.
 const navItems: NavSection[] = [
   {
-    title: 'Platform',
+    title: 'Command Center',
     items: [
       { href: '/', label: 'Dashboard', icon: Icons.dashboard },
-      { href: '/elimination', label: 'Elimination', icon: Icons.target },
-      { href: '/workbench', label: 'Workbench', icon: Icons.workbench },
-      { href: '/data-manager', label: 'Data Manager', icon: Icons.database },
+      { href: '#ai-manager', label: 'AI Manager', icon: Icons.sparkles, opensManager: true },
+      { href: '/ai/policies', label: 'AI Policies', icon: Icons.brain },
+      { href: '/workbench', label: 'AI Workbench', icon: Icons.workbench },
+      { href: '/ai/insights', label: 'AI Insights', icon: Icons.lightbulb },
     ],
   },
   {
-    title: 'AI Intelligence',
+    title: 'Beyond the brief',
     items: [
-      { href: '/ai/policies', label: 'AI Policies', icon: Icons.brain },
-      { href: '/ai/insights', label: 'AI Insights', icon: Icons.lightbulb },
+      { href: '/elimination', label: 'Elimination', icon: Icons.target },
       { href: '/ai/resolution', label: 'Auto Resolution', icon: Icons.zap },
+      { href: '/data-manager', label: 'Data Manager', icon: Icons.database },
     ],
   },
   {
@@ -90,6 +98,7 @@ interface NavLinkProps {
   children: React.ReactNode
   isCollapsed?: boolean
   badge?: number
+  opensManager?: boolean
 }
 
 function NavLink({
@@ -98,14 +107,25 @@ function NavLink({
   children,
   isCollapsed,
   badge,
+  opensManager,
 }: NavLinkProps) {
   const pathname = usePathname()
-  const isActive = pathname === href
+  const { openManager, isManagerOpen } = useAI()
+  const isActive = opensManager ? isManagerOpen : pathname === href
+
+  // The AI Manager is a panel, not a route. It still belongs in the nav — it is
+  // one of the five screens the brief asks for, and a header button is easy to
+  // miss — so it renders as a nav item that opens the panel.
+  const Wrapper = opensManager ? 'button' : Link
+  const wrapperProps = opensManager
+    ? { type: 'button' as const, onClick: openManager }
+    : { href }
 
   const linkContent = (
-    <Link
-      href={href}
+    <Wrapper
+      {...(wrapperProps as never)}
       className={cn(
+        opensManager && 'w-full text-left',
         'group relative flex items-center gap-3 rounded-xl px-3 py-2.5',
         'text-sm font-medium',
         'transition-all duration-200 ease-out',
@@ -143,7 +163,7 @@ function NavLink({
           {badge > 99 ? '99+' : badge}
         </span>
       )}
-    </Link>
+    </Wrapper>
   )
 
   // Wrap with tooltip when collapsed
@@ -296,6 +316,7 @@ export function Sidebar() {
                     href={item.href}
                     icon={item.icon}
                     isCollapsed={isCollapsed}
+                    opensManager={item.opensManager}
                   >
                     {item.label}
                   </NavLink>
