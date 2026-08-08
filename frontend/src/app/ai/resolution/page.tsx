@@ -90,9 +90,47 @@ function Metric({
   )
 }
 
-function DecisionRow({ decision }: { decision: Decision }) {
+function DecisionRow({
+  decision,
+  onChanged,
+}: {
+  decision: Decision
+  onChanged: () => void
+}) {
   const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [outcome, setOutcome] = useState<string | null>(null)
   const allowed = decision.auto_resolved
+
+  // Re-asking about one named ticket, rather than running a sweep and hoping it
+  // reaches this one. Showing that a threshold edit changed the agent's mind
+  // only works if it is the same ticket before and after.
+  const redecide = async () => {
+    setBusy(true)
+    setOutcome(null)
+    try {
+      const r = await apiClient.post<{
+        before: { decision: string | null }
+        after: { decision: string | null; confidence: number | null }
+        changed: boolean
+        thresholds_in_force: Record<string, unknown>
+      }>(`/api/agent/resolution/decide?issue_key=${encodeURIComponent(decision.issue_key)}`, {})
+      setOutcome(
+        r.changed
+          ? `${r.before.decision} → ${r.after.decision} at threshold ${String(
+              r.thresholds_in_force.min_auto_confidence
+            )}`
+          : `Unchanged: ${r.after.decision} at threshold ${String(
+              r.thresholds_in_force.min_auto_confidence
+            )}`
+      )
+      onChanged()
+    } catch (err) {
+      setOutcome(err instanceof Error ? err.message : 'Could not re-decide.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <Card className='relative overflow-hidden'>
@@ -189,6 +227,18 @@ function DecisionRow({ decision }: { decision: Decision }) {
                 </div>
               </div>
             )}
+            <div className='flex flex-wrap items-center gap-3'>
+              <Button size='sm' variant='outline' onClick={redecide} disabled={busy}>
+                <Icons.repeat
+                  className={cn('mr-2 h-3.5 w-3.5', busy && 'animate-spin')}
+                />
+                {busy ? 'Asking the Operator…' : 'Re-decide this ticket'}
+              </Button>
+              {outcome && (
+                <span className='text-xs font-medium text-brand-navy'>{outcome}</span>
+              )}
+            </div>
+
             <p className='rounded-lg bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground'>
               Decided by{' '}
               <strong className='text-brand-navy'>
@@ -397,7 +447,7 @@ export default function ResolutionPage() {
 
       <motion.div className='space-y-3' variants={itemVariants}>
         {(data?.decisions ?? []).map((decision) => (
-          <DecisionRow key={decision.issue_key} decision={decision} />
+          <DecisionRow key={decision.issue_key} decision={decision} onChanged={load} />
         ))}
       </motion.div>
     </motion.div>

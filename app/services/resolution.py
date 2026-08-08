@@ -579,6 +579,92 @@ async def resolve_allowed(
     }
 
 
+async def decide_one(
+    db: Session, client: SupervityClient, issue_key: str
+) -> dict:
+    """Ask the evidence Operator about one ticket, under the live thresholds.
+
+    Returns the verdict before and after, so a threshold edit can be shown to
+    have changed the agent's mind on a named ticket rather than on whichever
+    tickets a sweep happened to reach.
+    """
+    from . import agent_sync
+    from .policy import effective_inputs
+
+    workflow, defaults = await find_evidence_operator(db, client)
+    if workflow is None:
+        return {
+            "ran": False,
+            "reason": "No Operator on Auto takes a single issue_key with a "
+            "confidence threshold.",
+        }
+
+    before = next(
+        (d for d in read_decisions(db)["decisions"] if d["issue_key"] == issue_key),
+        None,
+    )
+
+    inputs = {**(defaults or {})}
+    try:
+        inputs.update({k: v for k, v in effective_inputs(db).items() if k in inputs})
+    except Exception as exc:  # noqa: BLE001 - fall back to the Operator's defaults
+        log.warning("Could not read policy inputs: %s", exc)
+    inputs["issue_keys"] = ""
+    inputs["issue_key"] = issue_key
+
+    run_id = None
+    try:
+        result = await client.execute(workflow.auto_id, inputs=inputs)
+        if isinstance(result, dict):
+            run_id = result.get("id") or (result.get("workflowRun") or {}).get("id")
+    except SupervityError as exc:
+        message = str(exc)
+        # The edge closes the connection at 100 seconds while the Operator is
+        # still working. The run completes regardless, so find it rather than
+        # reporting a failure that did not happen.
+        if not ("524" in message or "timed out" in message.lower()):
+            return {"ran": False, "reason": message[:300]}
+        try:
+            recent, _pagination = await client.list_runs(limit=25)
+            for run in recent:
+                if run.get("workflowId") == workflow.auto_id:
+                    run_id = run.get("id")
+                    break
+        except SupervityError:
+            pass
+
+    if run_id:
+        try:
+            await agent_sync.sync_run_timeline(db, client, run_id)
+        except SupervityError as exc:
+            log.warning("Could not mirror run %s: %s", run_id, exc)
+
+    after = next(
+        (d for d in read_decisions(db)["decisions"] if d["issue_key"] == issue_key),
+        None,
+    )
+
+    return {
+        "ran": True,
+        "issue_key": issue_key,
+        "thresholds_in_force": {
+            k: inputs.get(k)
+            for k in ("min_auto_confidence", "vip_requires_approval")
+        },
+        "before": {
+            "decision": (before or {}).get("decision"),
+            "confidence": (before or {}).get("confidence"),
+        },
+        "after": {
+            "decision": (after or {}).get("decision"),
+            "confidence": (after or {}).get("confidence"),
+            "reason": (after or {}).get("reason"),
+        },
+        "changed": bool(before and after and before["decision"] != after["decision"]),
+        "auto_run_id": run_id,
+    }
+
+
 async def sweep(
     db: Session,
     client: SupervityClient,

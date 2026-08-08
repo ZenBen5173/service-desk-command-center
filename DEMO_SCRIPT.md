@@ -52,26 +52,68 @@ Then hand over. Do not explain the page yet — it is the closing beat.
 
 ---
 
-## 1 · SERVICES — Zen Ben · 45 seconds
+## 1 · SERVICES — Zen Ben · 75 seconds
+
+Told as one ticket's journey rather than a list. Follow a ticket through and
+the architecture explains itself.
 
 **Screen:** Data Manager.
 
-> "Eight integrations across eight categories, and this page is generated from
-> the workflows on Auto rather than hardcoded — connect something new there and
-> it appears here.
+> "Eight integrations, eight categories. Rather than read them out, let me
+> follow one ticket through them.
 >
-> The data comes from OneDrive. The system of record is GitHub Issues. The
-> channel out to people is Outlook. The intelligence is one Orchestrator and
-> seven Operators on Supervity Auto. This Command Center is the ninth thing —
-> it displays and governs, it doesn't decide."
+> **It starts in OneDrive.** That's where the service desk's data lives — the
+> ticket export, the knowledge base, the SLA calendars, the staff directory.
+> It's read-only to us, and the agents read it with their own credentials.
+>
+> **It becomes a GitHub issue.** That's our system of record, and it's the one
+> choice worth explaining."
+
+**Pause here. This is the part they'll ask about.**
+
+> "GitHub Issues isn't a service desk tool. We chose it deliberately.
+>
+> This is an *IT* service desk — the people fixing these tickets are already in
+> GitHub every day. Putting the ticket where the fixer already works removes a
+> tool from their day.
+>
+> But the real reason is that an issue gives us four things we needed. A
+> threaded conversation, so the agent's comment and a person's reply sit in the
+> same place. Labels and assignment, so the agent can route without inventing a
+> schema. A full API, so an agent can act on it. And an audit trail nobody can
+> quietly edit.
+>
+> A ticket the agent touched looks exactly like a ticket a person touched. That
+> matters when the whole argument is that you can check its work."
+
+**Back to the flow.**
+
+> "**The agent thinks on Supervity Auto** — one Orchestrator, seven Operators.
+> Every decision on this screen was made there, not here.
+>
+> **The person hears about it through Outlook.** When a ticket resolves, the
+> requester gets a real email.
+>
+> **When the agent won't act alone, it stops at a human input form** — that's
+> the Workbench, and it's the next thing you'll see.
+>
+> **Everything the agents did is mirrored into Postgres**, which is what makes
+> this Command Center instant instead of a loading spinner over an API.
+>
+> And this page is generated from the workflows on Auto rather than hardcoded.
+> Connect something new there and it appears here on its own."
 
 **Point at a degraded badge.**
 
-> "And it tells the truth. These say degraded because runs using them actually
-> failed. It also separates what we probed directly from what we inferred from
-> agent runs — the Operators reach OneDrive with their own credentials, so our
-> backend has nothing to probe. Claiming a live check we can't make would be a
-> lie."
+> "One last thing, because it's the theme of this whole project.
+>
+> Half of these say degraded. We could have shown eight green ticks. These are
+> amber because runs using them actually failed, and the card says whether we
+> probed the service directly or inferred its health from agent runs.
+>
+> OneDrive is inferred. The Operators reach it with their own credentials, so
+> our backend has nothing to probe. Claiming a live check we can't make would
+> be the easiest lie on this screen."
 
 ---
 

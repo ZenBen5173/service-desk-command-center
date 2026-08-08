@@ -381,6 +381,26 @@ async def resolution_sweep(
         raise HTTPException(status_code=502, detail=str(exc))
 
 
+@router.post("/resolution/decide")
+async def resolution_decide_one(
+    issue_key: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    client: SupervityClient = Depends(get_supervity_client),
+):
+    """Ask the evidence Operator about one named ticket, under current policy.
+
+    A whole sweep is the wrong tool for showing that a threshold edit changed
+    the agent's mind: it re-asks about whichever tickets come first, which need
+    not include the one being discussed. This asks about exactly one.
+    """
+    try:
+        return await resolution.decide_one(db, client, issue_key)
+    except SupervityNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except SupervityError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+
 @router.post("/resolution/resolve")
 async def resolution_resolve(
     limit: int = Query(25, ge=1, le=100),
