@@ -155,13 +155,45 @@ function GroupCard({
                   )}
                 </div>
 
-                {group.tickets.length > 0 && (
+                {group.tickets.length > 0 ? (
                   <div>
                     <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
-                      Covered by this decision
+                      Tickets covered
                     </p>
                     <p className='text-xs text-muted-foreground'>
                       {group.tickets.join(' · ')}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+                      Tickets covered
+                    </p>
+                    {/* The Operators size these classes without naming their
+                        members. Saying so beats listing the nearest available
+                        strings and letting them read as ticket keys. */}
+                    <p className='text-xs text-muted-foreground'>
+                      Not listed. The Operator reported a class of{' '}
+                      <strong className='text-brand-navy'>
+                        {group.class_size_reported_by_agent ?? 'unknown'}
+                      </strong>{' '}
+                      tickets but did not name them, so this decision applies to
+                      the{' '}
+                      <strong className='text-brand-navy'>
+                        {group.item_count}
+                      </strong>{' '}
+                      queue items below, not to individual tickets.
+                    </p>
+                  </div>
+                )}
+
+                {group.cluster_names.length > 0 && (
+                  <div>
+                    <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+                      Merged from these Operator clusters
+                    </p>
+                    <p className='text-xs text-muted-foreground'>
+                      {group.cluster_names.join(' · ')}
                     </p>
                   </div>
                 )}

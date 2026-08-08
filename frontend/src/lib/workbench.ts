@@ -93,7 +93,13 @@ export interface WorkbenchGroup {
    *  to be queued here. */
   class_size_reported_by_agent: string | null
   items: number[]
+  /** Ticket keys, only where an Operator actually listed them. */
   tickets: string[]
+  /** The Operators' own names for this class — the same problem is named
+   *  slightly differently on each run, and these are not ticket keys. */
+  cluster_names: string[]
+  /** False when the Operators counted the class but never named its members. */
+  tickets_listed_by_agent: boolean
   item_count: number
   workflow_name: string | null
 }

@@ -133,6 +133,10 @@ def ingest(db: Session = Depends(get_db)):
 _GROUP_FILLER = re.compile(r"\b(unified|cluster|class|group|incidents?|issues?)\b")
 _NON_WORD = re.compile(r"[^a-z0-9]+")
 
+# The shape of a ticket reference, used to tell a ticket apart from a cluster
+# name. A format, not a value — no ticket key or project prefix is written down.
+_TICKET_KEY = re.compile(r"[A-Za-z][A-Za-z0-9]*-\d+")
+
 
 def _group_key(row: WorkbenchException) -> str | None:
     raw = (row.context or {}).get("cluster_key")
@@ -181,16 +185,43 @@ def list_groups(
                 "class_size_reported_by_agent": context.get("member_count"),
                 "items": [],
                 "tickets": [],
+                "cluster_names": [],
                 "workflow_name": row.workflow_name,
             },
         )
         entry["items"].append(row.id)
-        if row.subject_ref and row.subject_ref not in entry["tickets"]:
-            entry["tickets"].append(row.subject_ref)
+
+        # Two different things, kept apart on purpose.
+        #
+        # A class-level item's subject is the cluster the Operator named, not a
+        # ticket, and the same class arrives under slightly different cluster
+        # names on each run. Listing those under a heading like "tickets
+        # covered" reads as though they were ticket keys, which they are not.
+        #
+        # Ticket keys appear only where an Operator actually listed them. Most
+        # classes report a member count and no members, and that gap is stated
+        # rather than filled with the nearest available strings.
+        ref = row.subject_ref
+        if ref and _TICKET_KEY.fullmatch(str(ref)):
+            if ref not in entry["tickets"]:
+                entry["tickets"].append(ref)
+        elif ref and ref not in entry["cluster_names"]:
+            entry["cluster_names"].append(ref)
+
+        members = context.get("member_keys")
+        if isinstance(members, str):
+            members = re.findall(r"[A-Za-z][A-Za-z0-9]*-\d+", members)
+        if isinstance(members, list):
+            for member in members:
+                if str(member) not in entry["tickets"]:
+                    entry["tickets"].append(str(member))
 
     ordered = sorted(groups.values(), key=lambda g: len(g["items"]), reverse=True)
     for group in ordered:
         group["item_count"] = len(group["items"])
+        # Whether the Operators named the tickets in this class or only counted
+        # them. The UI says which, so nobody reads a class size as a ticket list.
+        group["tickets_listed_by_agent"] = len(group["tickets"]) > 0
 
     return {
         "groups": ordered,
