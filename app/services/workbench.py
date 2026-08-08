@@ -201,6 +201,97 @@ def _build_title(raw: dict, subject: str | None, exception_type: str | None) -> 
     return "Agent escalation"
 
 
+def _collapse_repeats(db: Session) -> int:
+    """Keep one open item per thing needing a decision, and drop the re-raises.
+
+    Every Orchestrator cycle re-reports the same escalations, and each cycle's
+    output was ingested as new items. Sixty-eight change approvals stood in the
+    queue for five actual tickets, and a hundred and fifty-two recurring-class
+    items for the same handful of classes. The queue was measuring how many
+    times the agents had run, not how much work was waiting.
+
+    The newest item wins: it carries the most recent run and the same content.
+    Items a human has decided are never touched — their decision stands, and a
+    later re-raise of the same subject is not a reason to revisit it.
+    """
+    open_items = (
+        db.query(WorkbenchException)
+        .filter(WorkbenchException.status == "open")
+        .all()
+    )
+
+    decided_subjects = {
+        (row.exception_type, row.subject_ref)
+        for row in db.query(WorkbenchException)
+        .filter(WorkbenchException.status != "open")
+        .all()
+    }
+
+    # Class-level items are superseded wholesale by a later run of the same
+    # workflow, exactly as the Elimination Backlog treats them. The Correlator
+    # renames its clusters slightly on every cycle — shared_drive_access_unified
+    # one run, unified_shared_drive_access the next — so deduplicating on the
+    # name alone left ninety classes standing where the Backlog reports fifteen.
+    # Two pages disagreeing about the same run is worse than either being
+    # sparse. Deciding that two differently named classes mean the same thing is
+    # a judgement about meaning and belongs to an Operator, so the run is the
+    # unit here, not the name.
+    newest_run_per_workflow: dict[str, str] = {}
+    for item in sorted(
+        open_items,
+        key=lambda i: (i.raised_at is not None, i.raised_at, i.id),
+        reverse=True,
+    ):
+        if not (item.context or {}).get("cluster_key"):
+            continue
+        workflow = item.workflow_name or "unknown"
+        newest_run_per_workflow.setdefault(workflow, item.auto_run_id)
+
+    newest: dict[tuple, WorkbenchException] = {}
+    duplicates: list[WorkbenchException] = []
+
+    for item in open_items:
+        is_class_item = bool((item.context or {}).get("cluster_key"))
+        if is_class_item:
+            workflow = item.workflow_name or "unknown"
+            if item.auto_run_id != newest_run_per_workflow.get(workflow):
+                duplicates.append(item)
+                continue
+
+        key = (item.exception_type, item.subject_ref)
+
+        # Already decided under a different run id. Re-raising it would put a
+        # settled question back in front of a person.
+        if key in decided_subjects:
+            duplicates.append(item)
+            continue
+
+        held = newest.get(key)
+        if held is None:
+            newest[key] = item
+            continue
+
+        # Prefer the most recently raised; fall back to the higher row id when
+        # neither carries a timestamp.
+        held_at = held.raised_at
+        item_at = item.raised_at
+        if (item_at or held_at) and (item_at is None or held_at is None):
+            keep, drop = (item, held) if item_at else (held, item)
+        elif item_at and held_at:
+            keep, drop = (item, held) if item_at > held_at else (held, item)
+        else:
+            keep, drop = (item, held) if item.id > held.id else (held, item)
+
+        newest[key] = keep
+        duplicates.append(drop)
+
+    for item in duplicates:
+        db.delete(item)
+    if duplicates:
+        db.commit()
+    return len(duplicates)
+
+
 def ingest_exceptions(db: Session) -> dict:
     """Turn agent escalations into queue items.
 
@@ -291,6 +382,8 @@ def ingest_exceptions(db: Session) -> dict:
     if created or updated:
         db.commit()
 
+    superseded = _collapse_repeats(db)
+
     open_count = (
         db.query(WorkbenchException).filter(WorkbenchException.status == "open").count()
     )
@@ -298,6 +391,9 @@ def ingest_exceptions(db: Session) -> dict:
         "created": created,
         "updated": updated,
         "left_resolved": skipped_resolved,
+        # The same escalation re-reported by a later cycle. Counted as work
+        # already in the queue, not as new work.
+        "superseded_repeats": superseded,
         "open": open_count,
         "total": db.query(WorkbenchException).count(),
     }
