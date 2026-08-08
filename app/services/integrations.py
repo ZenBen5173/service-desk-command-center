@@ -86,6 +86,14 @@ NON_INTEGRATION_SERVICES = {
 # How long a successful run keeps counting as evidence that a service works.
 EVIDENCE_WINDOW = timedelta(days=45)
 
+# How recently a failure has to have happened for the service to still be called
+# degraded. The evidence window is deliberately long so a service that ran once
+# a fortnight ago is not reported as unknown — but judging health over the same
+# span meant one failure kept a service amber for six weeks. Outlook read
+# degraded on a single failure from this morning while six hundred runs had
+# succeeded since.
+FAILURE_RELEVANCE = timedelta(hours=12)
+
 
 def _humanise(service_key: str) -> dict[str, str]:
     known = SERVICE_CATALOGUE.get(service_key)
@@ -157,17 +165,32 @@ def _service_evidence(db: Session, service_key: str, now: datetime) -> dict:
     failed = [r for r in recent if (r.status or "").lower() in ("failed", "error")]
     last_run = max((r.auto_created_at for r in recent), default=None)
 
+    # Only failures inside the relevance window bear on health now. Older ones
+    # stay in the counts, because hiding them would be the opposite mistake.
+    live_failures = [
+        r for r in failed if now - r.auto_created_at <= FAILURE_RELEVANCE
+    ]
+    last_failure = max((r.auto_created_at for r in failed), default=None)
+
     if not recent:
         status = "unknown"
         detail = "No runs using this service inside the evidence window"
     elif failed and not completed:
         status = "down"
         detail = f"All {len(failed)} recent run(s) using this service failed"
-    elif failed:
+    elif live_failures:
         status = "degraded"
         detail = (
-            f"{len(completed)} succeeded, {len(failed)} failed "
-            f"of {len(recent)} recent run(s)"
+            f"{len(live_failures)} run(s) failed in the last "
+            f"{int(FAILURE_RELEVANCE.total_seconds() // 3600)} hours, "
+            f"out of {len(recent)} in the evidence window"
+        )
+    elif failed:
+        status = "healthy"
+        detail = (
+            f"{len(completed)} succeeded, {len(failed)} failed of {len(recent)} "
+            f"run(s) — nothing has failed in the last "
+            f"{int(FAILURE_RELEVANCE.total_seconds() // 3600)} hours"
         )
     else:
         status = "healthy"
@@ -177,6 +200,9 @@ def _service_evidence(db: Session, service_key: str, now: datetime) -> dict:
         "status": status,
         "detail": detail,
         "check_type": "inferred",
+        # When the last failure was, so a reader can judge the status rather
+        # than take it on trust.
+        "last_failure_at": last_failure.isoformat() if last_failure else None,
         # Deduplicated: an Auto account can hold two workflows with the same
         # name, and listing one twice under "used by" says nothing extra.
         "workflows": sorted({w.name for w in workflows}),
