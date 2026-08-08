@@ -169,7 +169,7 @@ s.addText('An AI Employee that eliminates problems instead of processing tickets
   x: M, y: 4.35, w: 8.8, h: 0.5,
   fontFace: F, fontSize: 19, color: 'C9CFE6', margin: 0,
 })
-stats(s, [{ n: '380', l: 'tickets that need never happen', accent: true }], 5.2, true)
+stats(s, [{ n: '417', l: 'tickets that need never happen', accent: true }], 5.2, true)
 s.addNotes('Open on the Elimination page already loaded. Lead with the idea, not the architecture.')
 pageNum(s, 1, true)
 
@@ -256,7 +256,7 @@ body(s, 'Two numbers, never blended. One is work already avoided. The other is c
 // beside the chart and needs its own spacing.
 ;[
   { n: '40',  l: 'COLLAPSED TODAY\nWORK AVOIDED', c: NAVY },
-  { n: '380', l: 'PREVENTABLE\nA FORECAST',       c: CORN },
+  { n: '417', l: 'PREVENTABLE\nA FORECAST',       c: CORN },
 ].forEach((it, k) => {
   const x = M + k * 2.75
   s.addText(it.n, { x, y: 4.7, w: 2.55, h: 1.0,
@@ -347,7 +347,7 @@ body(s, 'ITSM-2212 had a fix ready and an open change request awaiting board app
 stats(s, [
   { n: '15,294', l: 'policy evaluations logged' },
   { n: '4', l: 'policies, editable without code' },
-  { n: '176', l: 'waiting on a human', accent: true },
+  { n: '36', l: 'waiting on a human', accent: true },
 ], 4.5)
 body(s, 'Each evaluation names the rule, the threshold in force at that moment, and what it was compared against. A later edit never rewrites history.', 6.15, { w: 10.4, size: 14, h: 0.6 })
 s.addNotes('Offer to change a threshold live if they want to see it take effect.')
@@ -491,8 +491,8 @@ s.addText('One that stops is\nthe one you would\nactually deploy.', {
   fontFace: F, fontSize: 44, bold: true, color: WHITE, lineSpacing: 52,
   margin: 0, valign: 'top',
 })
-stats(s, [{ n: '380', l: 'tickets that need never happen', accent: true }], 5.3, true)
-s.addNotes('End on 380. Do not add anything after this.')
+stats(s, [{ n: '417', l: 'tickets that need never happen', accent: true }], 5.3, true)
+s.addNotes('End on 417. Do not add anything after this.')
 pageNum(s, 11, true)
 
 pres.writeFile({ fileName: 'Service-Desk-Command-Center.pptx' })
