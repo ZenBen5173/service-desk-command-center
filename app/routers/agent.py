@@ -332,20 +332,102 @@ def resolution_summary(db: Session = Depends(get_db)):
 async def resolution_sweep(
     limit: int = Query(20, ge=1, le=100),
     concurrency: int = Query(3, ge=1, le=5),
+    resolve: bool = Query(True),
     db: Session = Depends(get_db),
     client: SupervityClient = Depends(get_supervity_client),
 ):
-    """Ask the evidence Operator about each pending ticket, one call per ticket.
+    """Ask the evidence Operator about each undecided ticket, one call per ticket.
 
-    Blocking, and slow by design — every ticket is a real Operator run on Auto.
-    Twenty tickets take a few minutes.
+    Tickets already decided are skipped, so calling this repeatedly walks
+    forward through the backlog rather than re-asking about the same few.
+
+    With `resolve` on, every ticket the agent clears is then handed to the
+    resolution Operator, which closes it, comments on the issue of record and
+    emails the requester. That sends real mail — pass `resolve=false` to decide
+    without acting.
+
+    Blocking, and slow by design: every ticket is a real Operator run on Auto.
     """
     try:
-        return await resolution.sweep(db, client, limit=limit, concurrency=concurrency)
+        return await resolution.sweep(
+            db, client, limit=limit, concurrency=concurrency, resolve=resolve
+        )
     except SupervityNotConfigured as exc:
         raise HTTPException(status_code=503, detail=str(exc))
     except SupervityError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
+
+
+@router.post("/resolution/resolve")
+async def resolution_resolve(
+    limit: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db),
+    client: SupervityClient = Depends(get_supervity_client),
+):
+    """Act on tickets the agent already cleared but has not yet resolved.
+
+    Sends real email and comments on real issues. Tickets an earlier run already
+    acted on are skipped, so this is safe to call twice.
+    """
+    try:
+        return await resolution.resolve_allowed(db, client, limit=limit)
+    except SupervityNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except SupervityError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+
+@router.post("/resolution/run-all")
+async def resolution_run_all(
+    batch: int = Query(20, ge=1, le=50),
+    max_batches: int = Query(20, ge=1, le=100),
+    concurrency: int = Query(3, ge=1, le=5),
+    resolve: bool = Query(True),
+    db: Session = Depends(get_db),
+    client: SupervityClient = Depends(get_supervity_client),
+):
+    """Work the whole backlog in batches until nothing is left undecided.
+
+    Steady rather than fast: each batch is a set of real Operator runs, and Auto
+    rate-limits. `max_batches` is a stop, not a target — it exists so a runaway
+    cannot spend the afternoon, and whatever is left over is reported rather
+    than quietly dropped.
+    """
+    batches: list[dict] = []
+    try:
+        for _ in range(max_batches):
+            outcome = await resolution.sweep(
+                db, client, limit=batch, concurrency=concurrency, resolve=resolve
+            )
+            if not outcome.get("ran"):
+                batches.append(outcome)
+                break
+            batches.append(
+                {
+                    "tickets_asked": outcome["tickets_asked"],
+                    "runs_mirrored": outcome["runs_mirrored"],
+                    "resolved_now": (outcome.get("resolution") or {}).get(
+                        "resolved_now", 0
+                    ),
+                    "remaining_undecided": outcome["remaining_undecided"],
+                }
+            )
+            if outcome["remaining_undecided"] == 0 or outcome["tickets_asked"] == 0:
+                break
+    except SupervityNotConfigured as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except SupervityError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+
+    summary = resolution.read_decisions(db)
+    remaining = len(resolution.pending_ticket_keys(db, 10_000)[0])
+    return {
+        "batches_run": len(batches),
+        "batches": batches,
+        "remaining_undecided": remaining,
+        "stopped_early": remaining > 0,
+        "result": {k: v for k, v in summary.items() if k != "decisions"},
+    }
 
 
 # ---------------------------------------------------------------------------

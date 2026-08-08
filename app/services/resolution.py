@@ -37,10 +37,23 @@ from .supervity import SupervityClient, SupervityError
 
 log = logging.getLogger(__name__)
 
-# The single-ticket evidence Operator is the one whose input schema takes a
-# ticket key and a confidence threshold. That pairing is what makes it the
-# governed-decision step, and it survives the workflow being renamed.
+# Operators are found by the shape of their input schema, never by name, so
+# renaming one on Auto does not silently stop this working.
+#
+# The evidence Operator is the one that takes a ticket key and a confidence
+# threshold — that pairing is what makes it the governed-decision step. The
+# resolution Operator is the one that takes a ticket key plus the evidence and
+# somewhere to send the notification; it is the only one that acts.
 REQUIRED_INPUTS = ("issue_key", "min_auto_confidence")
+RESOLVER_INPUTS = ("issue_key", "authoritative_evidence_json", "notification_recipient")
+
+# The step whose output is the evidence package the resolution Operator expects.
+EVIDENCE_STEP = "authoritative_evidence_reconciliation"
+
+# The shape of a ticket reference, used only to tell a ticket apart from a
+# cluster name in the Workbench. A format, not a value — no ticket key, project
+# prefix or expected count is written down anywhere in this repository.
+TICKET_KEY = re.compile(r"[A-Za-z][A-Za-z0-9]*-\d+")
 
 # Steps whose output carries the Operator's final verdict. Earlier steps in the
 # same run also emit an issue_key, so reading any of them would mistake a
@@ -75,16 +88,17 @@ def _parse_output(outputs: Any) -> Any:
     return inner
 
 
-async def find_evidence_operator(
-    db: Session, client: SupervityClient
+async def find_operator(
+    db: Session, client: SupervityClient, required: tuple[str, ...]
 ) -> tuple[AgentWorkflow, dict] | tuple[None, None]:
-    """The Operator that decides a single ticket, found by its input schema.
+    """The Operator whose input schema contains every named input.
 
     The workflow list Auto returns is a summary and carries no input schema, so
-    each definition is fetched to read it. Matching on the schema rather than on
-    a name means renaming the Operator on Auto does not silently break this.
+    each definition is fetched to read it.
 
-    Returns the workflow and the defaults declared for its inputs.
+    Returns the workflow and the defaults it declares for its inputs. Nothing is
+    invented: an input with no default stays absent, and the call fails loudly
+    rather than running against a value this repo made up.
     """
     for workflow in db.query(AgentWorkflow).all():
         try:
@@ -96,12 +110,9 @@ async def find_evidence_operator(
         inner = (payload.get("workflow") or payload) if isinstance(payload, dict) else {}
         specs = [i for i in (inner.get("inputs") or []) if isinstance(i, dict)]
         names = {str(i.get("name")) for i in specs}
-        if not all(required in names for required in REQUIRED_INPUTS):
+        if not all(name in names for name in required):
             continue
 
-        # The Operator's own declared default for each input. Nothing is invented
-        # here: an input with no default stays absent, and the call fails loudly
-        # rather than running against a value this repo made up.
         defaults: dict[str, Any] = {}
         for spec in specs:
             name, value = spec.get("name"), spec.get("value")
@@ -112,7 +123,18 @@ async def find_evidence_operator(
     return None, None
 
 
-def pending_ticket_keys(db: Session, limit: int) -> tuple[list[str], str | None]:
+async def find_evidence_operator(db: Session, client: SupervityClient):
+    return await find_operator(db, client, REQUIRED_INPUTS)
+
+
+def _decided_keys(db: Session) -> set[str]:
+    """Tickets the Operator has already given a verdict on."""
+    return {d["issue_key"] for d in read_decisions(db)["decisions"]}
+
+
+def pending_ticket_keys(
+    db: Session, limit: int, *, skip_decided: bool = True
+) -> tuple[list[str], str | None]:
     """Ticket keys to ask about, and where they came from.
 
     The Orchestrator records every ticket it routed and the rule that decided
@@ -135,7 +157,11 @@ def pending_ticket_keys(db: Session, limit: int) -> tuple[list[str], str | None]
 
     gated: list[str] = []
     other: list[str] = []
-    seen: set[str] = set()
+    # Tickets already decided are skipped, so calling this repeatedly walks
+    # forward through the backlog instead of re-asking about the same few. That
+    # is what lets a sweep run to exhaustion in chunks rather than stopping at
+    # whatever the first batch happened to contain.
+    seen: set[str] = _decided_keys(db) if skip_decided else set()
     source: str | None = None
 
     for activity, run in rows:
@@ -163,6 +189,13 @@ def pending_ticket_keys(db: Session, limit: int) -> tuple[list[str], str | None]
     # The Orchestrator only routes a few tickets per cycle, so its history alone
     # is a thin sample. The Workbench holds every ticket that reached a person,
     # which is the same population seen from the other end.
+    #
+    # Every open item is scanned, not the first few. Capping the scan at a
+    # multiple of the batch size made a sweep report "no tickets left" while
+    # tickets remained further down the queue — a batch loop that stops early
+    # and calls itself finished is exactly the failure this build argues
+    # against. Most items are already decided or are cluster-level, so the scan
+    # has to reach past them.
     if len(keys) < limit:
         from ..models.workbench import WorkbenchException
 
@@ -170,10 +203,15 @@ def pending_ticket_keys(db: Session, limit: int) -> tuple[list[str], str | None]
             db.query(WorkbenchException)
             .filter(WorkbenchException.status == "open")
             .order_by(WorkbenchException.created_at.desc())
-            .limit(limit * 3)
             .all()
         ):
-            key = getattr(item, "issue_key", None)
+            # Workbench items also cover ticket classes and clusters, whose refs
+            # are cluster names rather than tickets. The evidence Operator takes
+            # a single ticket, so only refs shaped like a ticket key are asked
+            # about. A shape, not a value — no key is written down here.
+            key = item.subject_ref
+            if key and not TICKET_KEY.fullmatch(str(key)):
+                continue
             if key and str(key) not in seen:
                 seen.add(str(key))
                 keys.append(str(key))
@@ -247,11 +285,212 @@ def read_decisions(db: Session) -> dict:
     }
 
 
+def _evidence_for(db: Session, issue_key: str) -> dict | None:
+    """The evidence package the Operator produced for one ticket, newest first.
+
+    Handed to the resolution Operator verbatim. It is the Operator's own output,
+    not a summary of it — the resolution Operator re-reads the policy verdict
+    and the identity evidence out of this and would rightly refuse a version
+    this repo had paraphrased.
+    """
+    rows = (
+        db.query(AgentActivity, AgentRun)
+        .join(AgentRun, AgentActivity.run_id == AgentRun.id)
+        .order_by(AgentRun.auto_created_at.desc().nullslast())
+        .all()
+    )
+    for activity, _run in rows:
+        if (activity.step_id or "") != EVIDENCE_STEP:
+            continue
+        payload = _parse_output(activity.outputs)
+        if isinstance(payload, dict) and str(payload.get("issue_key")) == issue_key:
+            return payload
+    return None
+
+
+def _repo_from_issue_url(url: Any) -> str | None:
+    """`owner/repo` out of a GitHub issue URL, or None if it is not one."""
+    if not isinstance(url, str):
+        return None
+    match = re.search(r"github\.com/([^/\s]+)/([^/\s]+)/issues/", url)
+    return f"{match.group(1)}/{match.group(2)}" if match else None
+
+
+def _already_resolved(db: Session) -> set[str]:
+    """Tickets a resolution run has already acted on.
+
+    Without this, a second sweep would email the same person twice about the
+    same ticket. An action that reaches a real inbox has to be idempotent.
+    """
+    done: set[str] = set()
+    rows = (
+        db.query(AgentActivity, AgentRun)
+        .join(AgentRun, AgentActivity.run_id == AgentRun.id)
+        .all()
+    )
+    for activity, _run in rows:
+        payload = _parse_output(activity.outputs)
+        if not isinstance(payload, dict):
+            continue
+        key = payload.get("issue_key")
+        # The resolution Operator reports what it sent. Anything carrying a
+        # notification or resolution outcome means this ticket was acted on.
+        if key and any(
+            field in payload
+            for field in (
+                "notification_status",
+                "email_status",
+                "resolution_status",
+                "notification_recipient",
+            )
+        ):
+            done.add(str(key))
+    return done
+
+
+async def resolve_allowed(
+    db: Session, client: SupervityClient, limit: int = 25
+) -> dict:
+    """Hand every ticket the Operator cleared to the Operator that resolves it.
+
+    This is the second half of the loop. An ALLOW that sits in a table is not a
+    resolved ticket — the agent has to actually close it, comment on the issue
+    of record, and tell the person who raised it.
+
+    Nothing is decided here. The verdict was made by the evidence Operator, and
+    the resolution Operator re-checks it against the evidence before acting.
+    """
+    from . import agent_sync
+
+    workflow, defaults = await find_operator(db, client, RESOLVER_INPUTS)
+    if workflow is None:
+        return {
+            "ran": False,
+            "reason": (
+                "No Operator on Auto takes a ticket key, an evidence package and "
+                "a notification recipient, so there is nothing to resolve with."
+            ),
+        }
+
+    # Where the evidence Operator looked this ticket up. Used when the evidence
+    # itself carries no issue URL — it is the repository the agent actually read
+    # from, so it is the system of record, rather than whichever repository this
+    # Operator was last pointed at by hand.
+    _evidence_wf, evidence_defaults = await find_evidence_operator(db, client)
+    fallback_repo = (evidence_defaults or {}).get("github_repository")
+
+    allowed = [d for d in read_decisions(db)["decisions"] if d["auto_resolved"]]
+    done = _already_resolved(db)
+    todo = [d for d in allowed if d["issue_key"] not in done][:limit]
+
+    if not todo:
+        return {
+            "ran": True,
+            "operator": workflow.name,
+            "cleared_for_resolution": len(allowed),
+            "already_resolved": len(allowed) - len(todo),
+            "resolved_now": 0,
+            "results": [],
+            "note": "Every cleared ticket has already been acted on.",
+        }
+
+    results: list[dict] = []
+    run_ids: list[str] = []
+
+    for decision in todo:
+        issue_key = decision["issue_key"]
+        evidence = _evidence_for(db, issue_key)
+        if evidence is None:
+            results.append(
+                {
+                    "issue_key": issue_key,
+                    "status": "skipped",
+                    "reason": "No evidence package mirrored for this ticket.",
+                }
+            )
+            continue
+
+        inputs = {
+            **(defaults or {}),
+            "issue_key": issue_key,
+            "authoritative_evidence_json": json.dumps(evidence),
+        }
+
+        # The resolution Operator's saved default for the repository is whatever
+        # it was last run against by hand, and pointed at a repository that does
+        # not hold these tickets. Take it from the issue URL in the evidence
+        # instead: that is where the agent itself found this ticket, so a
+        # comment posted there lands on the right issue.
+        repo = _repo_from_issue_url(evidence.get("github_issue_url")) or fallback_repo
+        if repo:
+            inputs["github_repository"] = repo
+        elif "github_repository" in inputs:
+            results.append(
+                {
+                    "issue_key": issue_key,
+                    "status": "skipped",
+                    "reason": (
+                        "The evidence carries no GitHub issue URL, so the target "
+                        "repository cannot be established. Refusing to comment on "
+                        "whichever repository was configured last."
+                    ),
+                }
+            )
+            continue
+        try:
+            result = await client.execute(workflow.auto_id, inputs=inputs)
+        except SupervityError as exc:
+            message = str(exc)
+            # A lost reply is not a lost run: the Operator carries on and may
+            # well have sent the email. Recorded as unconfirmed rather than
+            # failed, so a retry does not send a second one.
+            unconfirmed = "524" in message or "timed out" in message.lower()
+            results.append(
+                {
+                    "issue_key": issue_key,
+                    "status": "unconfirmed" if unconfirmed else "failed",
+                    "reason": message[:200],
+                }
+            )
+            continue
+
+        run_id = None
+        if isinstance(result, dict):
+            run_id = result.get("id") or (result.get("workflowRun") or {}).get("id")
+        if run_id:
+            run_ids.append(run_id)
+        results.append(
+            {
+                "issue_key": issue_key,
+                "status": "resolved",
+                "confidence": decision["confidence"],
+                "auto_run_id": run_id,
+            }
+        )
+
+    for run_id in run_ids:
+        try:
+            await agent_sync.sync_run_timeline(db, client, run_id)
+        except SupervityError as exc:
+            log.warning("Could not mirror resolution run %s: %s", run_id, exc)
+
+    return {
+        "ran": True,
+        "operator": workflow.name,
+        "cleared_for_resolution": len(allowed),
+        "already_resolved": len(allowed) - len(todo),
+        "resolved_now": sum(1 for r in results if r["status"] == "resolved"),
+        "unconfirmed": sum(1 for r in results if r["status"] == "unconfirmed"),
+        "results": results,
+    }
+
+
 async def sweep(
     db: Session,
     client: SupervityClient,
     limit: int = 20,
     concurrency: int = 3,
+    resolve: bool = True,
 ) -> dict:
     """Ask the evidence Operator about each pending ticket, one call per ticket.
 
@@ -390,5 +629,10 @@ async def sweep(
         # against.
         "replies_lost_to_timeout": len(detached),
         "failures": failures,
+        # Closing the loop: a ticket the agent cleared is not resolved until the
+        # agent has actually resolved it, commented on the issue of record and
+        # told the person who raised it.
+        "resolution": (await resolve_allowed(db, client)) if resolve else None,
         "result": read_decisions(db),
+        "remaining_undecided": len(pending_ticket_keys(db, 10_000)[0]),
     }
