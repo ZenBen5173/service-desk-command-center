@@ -18,6 +18,32 @@ import { cn } from '@/lib/utils'
  * the Command Center — an insights page that invents patterns is worse than an
  * empty one, because it looks equally confident either way.
  */
+interface PlanStep {
+  seq: number
+  action: string
+}
+
+/**
+ * The improvement plan attached to an insight.
+ *
+ * `next_action_source` and `owner_source` matter more than they look. An
+ * Operator on Auto proposes the permanent fix for some classes and not others;
+ * where it did not, the plan falls back to a standard service management
+ * playbook. The reader has to be able to tell which sentences are the agent's,
+ * so both are labelled in the UI rather than blended into one confident voice.
+ */
+interface ActionPlan {
+  next_action: string
+  next_action_source: 'agent' | 'playbook'
+  owner: string
+  owner_source: 'agent' | 'playbook'
+  expected_benefit: string
+  benefit_metric: Record<string, unknown>
+  steps: PlanStep[]
+  effort?: string | null
+  horizon?: string | null
+}
+
 interface Insight {
   id: string
   type: 'pattern' | 'anomaly' | 'recommendation'
@@ -28,6 +54,7 @@ interface Insight {
   suggested_action: string
   action_type: string
   owning_team?: string | null
+  action_plan?: ActionPlan | null
   /** Which Operator reported the finding this is built from. */
   source?: string | null
   created_at: string
@@ -79,6 +106,99 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: s
         </p>
       </CardContent>
     </Card>
+  )
+}
+
+/** Marks whether a line came from an Operator or from the standard playbook. */
+function SourceTag({ source }: { source: 'agent' | 'playbook' }) {
+  return (
+    <span
+      className={cn(
+        'rounded-full border px-1.5 py-0.5 text-[10px] font-medium',
+        source === 'agent'
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border-border/60 bg-muted/40 text-muted-foreground'
+      )}
+      title={
+        source === 'agent'
+          ? 'Proposed by an Operator on Supervity Auto'
+          : 'Standard service management playbook — the Operator did not propose one'
+      }
+    >
+      {source === 'agent' ? 'Agent proposed' : 'Playbook'}
+    </span>
+  )
+}
+
+function PlanBlock({ plan }: { plan: ActionPlan }) {
+  return (
+    <div className='space-y-4'>
+      <div className='rounded-lg border border-brand-cornflower/30 bg-brand-cornflower/5 px-3 py-2.5'>
+        <div className='mb-1 flex items-center gap-2'>
+          <p className='text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+            Next recommended action
+          </p>
+          <SourceTag source={plan.next_action_source} />
+        </div>
+        <p className='text-sm font-medium text-brand-navy'>{plan.next_action}</p>
+      </div>
+
+      <div className='grid gap-3 sm:grid-cols-3'>
+        <div>
+          <p className='mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+            Responsible <SourceTag source={plan.owner_source} />
+          </p>
+          <p className='text-sm text-brand-navy'>{plan.owner}</p>
+        </div>
+        <div>
+          <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+            Effort
+          </p>
+          <p className='text-sm capitalize text-brand-navy'>{plan.effort ?? '—'}</p>
+        </div>
+        <div>
+          <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+            Timeframe
+          </p>
+          <p className='text-sm capitalize text-brand-navy'>{plan.horizon ?? '—'}</p>
+        </div>
+      </div>
+
+      <div>
+        <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+          Expected benefit
+        </p>
+        <p className='text-sm text-brand-navy'>{plan.expected_benefit}</p>
+        {Object.keys(plan.benefit_metric ?? {}).length > 0 && (
+          <div className='mt-1.5 flex flex-wrap gap-x-4 gap-y-1'>
+            {Object.entries(plan.benefit_metric).map(([k, v]) => (
+              <span key={k} className='text-xs text-muted-foreground'>
+                {k.replace(/_/g, ' ')}:{' '}
+                <strong className='text-brand-navy'>{String(v)}</strong>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {plan.steps.length > 0 && (
+        <div>
+          <p className='mb-2 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+            Plan
+          </p>
+          <ol className='space-y-1.5'>
+            {plan.steps.map((step) => (
+              <li key={step.seq} className='flex gap-2.5 text-sm'>
+                <span className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-navy/8 text-[11px] font-semibold text-brand-navy'>
+                  {step.seq}
+                </span>
+                <span className='text-brand-navy'>{step.action}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -140,15 +260,19 @@ function InsightRow({ insight }: { insight: Insight }) {
               exit={{ height: 0, opacity: 0 }}
               className='overflow-hidden'
             >
-              <div className='mt-4 space-y-3 border-t border-border/40 pt-4'>
-                <div>
-                  <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
-                    What to do
-                  </p>
-                  <p className='text-sm text-brand-navy'>
-                    {insight.suggested_action}
-                  </p>
-                </div>
+              <div className='mt-4 space-y-4 border-t border-border/40 pt-4'>
+                {insight.action_plan ? (
+                  <PlanBlock plan={insight.action_plan} />
+                ) : (
+                  <div>
+                    <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+                      What to do
+                    </p>
+                    <p className='text-sm text-brand-navy'>
+                      {insight.suggested_action}
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <p className='mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>

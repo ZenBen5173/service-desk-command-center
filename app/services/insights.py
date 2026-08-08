@@ -99,10 +99,33 @@ def _newest_runs(db: Session) -> dict[str, int]:
 
 
 def _classes_and_queue(db: Session) -> tuple[list[dict], list[dict], dict[str, str]]:
-    """Pull the Operators' ticket classes and the triage queue from the newest runs."""
+    """Pull the Operators' ticket classes and the triage queue.
+
+    Classes come from the Elimination Backlog's own selection, not a second
+    implementation of it. Several Operators describe the same tickets from
+    different angles — one sizes the problem, another names the permanent fix —
+    and picking the widest list on its own landed here on the set with no fixes,
+    so this page reported "no permanent fix proposed yet" for classes the
+    Elimination page was displaying a fix for. One selection, one answer.
+
+    The triage queue has only one producer, so it is still read directly.
+    """
+    from .elimination import build_backlog
+
+    classes: list[dict] = []
+    sources: dict[str, str] = {}
+    try:
+        backlog = build_backlog(db, limit=100)
+        classes = backlog.get("classes") or []
+        if classes:
+            origin = (classes[0].get("source") or {}).get("workflow_name")
+            sources["classes"] = origin or "an Operator"
+    except Exception as exc:  # noqa: BLE001 - insights must degrade, not 500
+        log.warning("Could not read the elimination backlog for insights: %s", exc)
+
     newest = _newest_runs(db)
     if not newest:
-        return [], [], {}
+        return classes, [], sources
 
     run_by_id = {r.id: r for r in db.query(AgentRun).all()}
     names = {w.auto_id: w.name for w in db.query(AgentWorkflow).all()}
@@ -112,9 +135,7 @@ def _classes_and_queue(db: Session) -> tuple[list[dict], list[dict], dict[str, s
         .all()
     )
 
-    best_classes: list[dict] = []
     queue: list[dict] = []
-    sources: dict[str, str] = {}
 
     for activity in activities:
         run = run_by_id.get(activity.run_id)
@@ -125,24 +146,210 @@ def _classes_and_queue(db: Session) -> tuple[list[dict], list[dict], dict[str, s
         )
         for payload in _payloads(activity):
             for node in _walk(payload):
-                for key in ("clusters", "classes"):
-                    value = node.get(key)
-                    if (
-                        isinstance(value, list)
-                        and value
-                        and all(isinstance(i, dict) for i in value)
-                    ):
-                        # Widest coverage wins, same rule the Elimination
-                        # Backlog uses, so the two pages never disagree.
-                        if len(value) > len(best_classes):
-                            best_classes = value
-                            sources["classes"] = origin
                 ordered = node.get("ordered_queue")
                 if isinstance(ordered, list) and ordered and not queue:
                     queue = [i for i in ordered if isinstance(i, dict)]
                     sources["queue"] = origin
 
-    return best_classes, queue, sources
+    return classes, queue, sources
+
+
+# ---------------------------------------------------------------------------
+# Action plans
+# ---------------------------------------------------------------------------
+#
+# An insight that names a problem and stops is half an insight. Each one below
+# carries a plan: the single next action, who owns it, what it is worth, and the
+# ordered steps to get there.
+#
+# The plans are keyed by action type, never by ticket content — a class about
+# printers and a class about mailboxes both take the "eliminate" path, and the
+# specifics come from what the Operator reported about that class. Nothing here
+# encodes knowledge of the sample dataset.
+#
+# Where the Operator proposed a permanent fix, that fix is the plan and is
+# labelled as the agent's. Where it did not, the plan is a standard service
+# management playbook and says so. The distinction is shown in the UI, because a
+# reader has to know which sentences came from the agent.
+
+# Roles, not people. The Operators report an owning team when they can; when they
+# cannot, naming the function that owns this class of work is still actionable,
+# and is marked as coming from the playbook rather than the agent.
+FALLBACK_OWNER = {
+    "eliminate": "Service Desk Manager with the owning team",
+    "incident_command": "Major Incident Manager",
+    "author_article": "Knowledge Manager",
+    "prioritise": "Service Desk Team Lead",
+    "rebalance": "Service Desk Manager",
+    "review": "Service Desk Team Lead",
+}
+
+EFFORT = {
+    "eliminate": "medium",
+    "incident_command": "low",
+    "author_article": "low",
+    "prioritise": "low",
+    "rebalance": "medium",
+    "review": "low",
+}
+
+HORIZON = {
+    "eliminate": "this quarter",
+    "incident_command": "now",
+    "author_article": "this week",
+    "prioritise": "now",
+    "rebalance": "this week",
+    "review": "now",
+}
+
+
+def _steps_for(action_type: str, fix: str | None, agent_proposed: bool) -> list[str]:
+    """The ordered path from finding to fixed, per action type."""
+    if action_type == "eliminate":
+        return [
+            "Confirm the root cause with the owning team",
+            (
+                f"Raise a change request for: {fix}"
+                if fix
+                else "Agree the permanent fix and raise a change request"
+            ),
+            "Take it to the change advisory board for approval",
+            "Implement, then publish a knowledge article covering it",
+            "Watch new ticket volume for this class for two weeks",
+        ]
+    if action_type == "incident_command":
+        return [
+            "Declare a major incident and appoint an incident manager",
+            "Send one communication to every affected person, not per ticket",
+            "Link every member ticket to the parent incident",
+            "Fix the root cause, then close the children together",
+            "Hold a post-incident review and record the permanent fix",
+        ]
+    if action_type == "author_article":
+        return [
+            "Pick a resolved ticket in this class as the source",
+            "Draft the article: symptom, cause, steps, verification",
+            "Have the owning team review it for accuracy",
+            "Publish and mark it auto-safe if the fix carries no risk",
+            "Re-check the class in two weeks for repeat tickets",
+        ]
+    if action_type == "prioritise":
+        return [
+            "Work the queue in forecast-breach order, not arrival order",
+            "Give the tickets with no first response an owner today",
+            "Escalate anything that cannot be met inside its calendar",
+            "Re-run triage after the queue is cleared",
+        ]
+    if action_type == "rebalance":
+        return [
+            "Review the load split with both team leads",
+            "Ship the heaviest team's top permanent fix first",
+            "Move or cross-train capacity for the remainder",
+            "Re-check the split after the fix lands",
+        ]
+    if action_type == "review":
+        return [
+            "Sort the Workbench by impact",
+            "Clear change approvals first — they block other work",
+            "Approve, reject or modify each with a recorded reason",
+            "Re-run the cycle so cleared items flow on",
+        ]
+    return []
+
+
+def _benefit(action_type: str, data: dict) -> tuple[str, dict]:
+    """What the fix is worth, in the agent's own numbers.
+
+    Returns prose plus the structured figures behind it, so the UI can show the
+    arithmetic instead of asking anyone to trust the sentence.
+    """
+    tickets = data.get("tickets")
+    breaches = data.get("sla_breaches")
+    metric: dict[str, Any] = {}
+
+    if action_type == "eliminate" and tickets:
+        metric = {"tickets_prevented": tickets, "sla_breaches_avoided": breaches}
+        text = f"{tickets} tickets stop arriving"
+        if breaches:
+            text += f", and {breaches} SLA breaches stop happening"
+        return text, metric
+
+    if action_type == "incident_command" and tickets:
+        metric = {"conversations_collapsed": tickets, "responses_needed": 1}
+        return (
+            f"{tickets} conversations collapse into 1 — one fix, one message, "
+            f"{tickets} tickets closed together"
+        ), metric
+
+    if action_type == "author_article" and tickets:
+        metric = {"tickets_answerable_from_kb": tickets}
+        return (
+            f"{tickets} tickets become answerable from the knowledge base, and "
+            "the class becomes eligible for automated resolution"
+        ), metric
+
+    if action_type == "prioritise":
+        at_risk = data.get("at_risk_next_8_business_hours")
+        no_resp = data.get("no_first_response")
+        metric = {"breaches_preventable": at_risk, "tickets_without_first_response": no_resp}
+        if at_risk:
+            return (
+                f"{at_risk} tickets still inside their SLA window can be saved; "
+                f"{no_resp or 0} have never been answered"
+            ), metric
+        return "Breaches stop accumulating while the backlog is worked", metric
+
+    if action_type == "rebalance":
+        share = data.get("heaviest_share_pct")
+        metric = {"heaviest_share_pct": share}
+        return (
+            f"Load drops from {share}% concentrated on one team" if share
+            else "Load spreads more evenly across teams"
+        ), metric
+
+    if action_type == "review":
+        metric = {"decisions_outstanding": data.get("open")}
+        return (
+            f"{data.get('open')} tickets start moving again — each one is blocked "
+            "on a decision, not on work"
+        ), metric
+
+    return "Not quantified — the Operators did not report the figures needed.", metric
+
+
+def _plan(
+    action_type: str,
+    data: dict,
+    *,
+    agent_fix: str | None = None,
+    owning_team: str | None = None,
+) -> dict:
+    """Assemble the action plan attached to an insight."""
+    agent_proposed = bool(agent_fix)
+    fix = agent_fix or None
+    benefit_text, benefit_metric = _benefit(action_type, data)
+    steps = _steps_for(action_type, fix, agent_proposed)
+
+    if fix:
+        next_action = fix
+    elif steps:
+        next_action = steps[0]
+    else:
+        next_action = "No action derivable from what the Operators reported."
+
+    return {
+        "next_action": next_action,
+        # Whether the recommendation is the agent's own or a standard playbook
+        # step. The UI labels these differently on purpose.
+        "next_action_source": "agent" if agent_proposed else "playbook",
+        "owner": owning_team or FALLBACK_OWNER.get(action_type, "Service Desk Manager"),
+        "owner_source": "agent" if owning_team else "playbook",
+        "expected_benefit": benefit_text,
+        "benefit_metric": {k: v for k, v in benefit_metric.items() if v is not None},
+        "steps": [{"seq": i + 1, "action": s} for i, s in enumerate(steps)],
+        "effort": EFFORT.get(action_type),
+        "horizon": HORIZON.get(action_type),
+    }
 
 
 def _field(entry: dict, *names: str) -> Any:
@@ -184,6 +391,14 @@ def collect(db: Session) -> dict:
         breaches = _num(_field(entry, "breached_count", "breaches", "breach_count"))
         if volume < 2:
             continue
+        agent_fix = _field(entry, "proposed_fix", "permanent_fix")
+        team = _field(entry, "owning_team", "assignment_group")
+        data = {
+            "tickets": volume,
+            "people_affected": int(people) if people else None,
+            "sla_breaches": int(breaches) if breaches is not None else None,
+            "affected_system": _field(entry, "affected_system"),
+        }
         insights.append(
             {
                 "id": f"recurring::{_field(entry, 'cluster_key', 'class_key', 'key')}",
@@ -196,16 +411,17 @@ def collect(db: Session) -> dict:
                     "underlying problem. Resolving them individually repeats the same "
                     "work every time it recurs."
                 ),
-                "data": {
-                    "tickets": volume,
-                    "people_affected": int(people) if people else None,
-                    "sla_breaches": int(breaches) if breaches is not None else None,
-                    "affected_system": _field(entry, "affected_system"),
-                },
-                "suggested_action": _field(entry, "proposed_fix", "permanent_fix")
-                or "No permanent fix proposed yet.",
+                "data": data,
+                # Never left empty. Where the Operator proposed a fix that is the
+                # suggestion; otherwise the playbook's first step stands in, and
+                # the plan records which of the two this is.
+                "suggested_action": agent_fix
+                or "Agree the permanent fix with the owning team and raise a change request.",
                 "action_type": "eliminate",
-                "owning_team": _field(entry, "owning_team", "assignment_group"),
+                "owning_team": team,
+                "action_plan": _plan(
+                    "eliminate", data, agent_fix=agent_fix, owning_team=team
+                ),
                 "source": sources.get("classes"),
                 "created_at": now,
             }
@@ -244,6 +460,12 @@ def collect(db: Session) -> dict:
                 "suggested_action": _field(entry, "proposed_fix")
                 or "Run comms once for the whole cluster; do not reply per ticket.",
                 "action_type": "incident_command",
+                "action_plan": _plan(
+                    "incident_command",
+                    {"tickets": volume},
+                    agent_fix=_field(entry, "proposed_fix"),
+                    owning_team=_field(entry, "owning_team", "assignment_group"),
+                ),
                 "source": sources.get("classes"),
                 "created_at": now,
             }
@@ -283,6 +505,12 @@ def collect(db: Session) -> dict:
                 or "Draft an article from a resolved ticket in this class.",
                 "action_type": "author_article",
                 "owning_team": _field(entry, "owning_team"),
+                "action_plan": _plan(
+                    "author_article",
+                    {"tickets": volume},
+                    agent_fix=_field(entry, "proposed_fix"),
+                    owning_team=_field(entry, "owning_team"),
+                ),
                 "source": sources.get("classes"),
                 "created_at": now,
             }
@@ -316,6 +544,13 @@ def collect(db: Session) -> dict:
                         "no_first_response": len(no_response),
                         "queue_size": len(queue),
                     },
+                    "action_plan": _plan(
+                        "prioritise",
+                        {
+                            "at_risk_next_8_business_hours": len(at_risk),
+                            "no_first_response": len(no_response),
+                        },
+                    ),
                     "suggested_action": (
                         "Work the queue in forecast-breach order. The Triage Operator "
                         "already sorts it that way."
@@ -357,6 +592,11 @@ def collect(db: Session) -> dict:
                         "by_team": dict(ranked),
                         "heaviest_share_pct": share,
                     },
+                    "action_plan": _plan(
+                        "rebalance",
+                        {"heaviest_share_pct": share},
+                        owning_team=heaviest,
+                    ),
                     "suggested_action": (
                         f"Fixing {heaviest}'s top problem class removes the largest "
                         "single block of recurring work."
@@ -385,6 +625,7 @@ def collect(db: Session) -> dict:
                 "data": {"open": open_items},
                 "suggested_action": "Clear the Workbench queue, highest impact first.",
                 "action_type": "review",
+                "action_plan": _plan("review", {"open": open_items}),
                 "source": "Workbench",
                 "created_at": now,
             }
