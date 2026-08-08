@@ -55,6 +55,9 @@ interface Insight {
   action_type: string
   owning_team?: string | null
   action_plan?: ActionPlan | null
+  /** Where the detail lives, when another page owns it. */
+  link?: string | null
+  link_label?: string | null
   /** Which Operator reported the finding this is built from. */
   source?: string | null
   created_at: string
@@ -291,6 +294,15 @@ function InsightRow({ insight }: { insight: Insight }) {
                       ))}
                   </div>
                 </div>
+
+                {insight.link && (
+                  <a
+                    href={insight.link}
+                    className='inline-flex items-center gap-1.5 text-sm font-medium text-brand-cornflower hover:underline'
+                  >
+                    {insight.link_label ?? 'Open'} →
+                  </a>
+                )}
 
                 {insight.source && (
                   <p className='rounded-lg bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground'>

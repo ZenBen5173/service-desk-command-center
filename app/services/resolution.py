@@ -427,17 +427,29 @@ def _already_resolved(db: Session) -> set[str]:
         if not isinstance(payload, dict):
             continue
         key = payload.get("issue_key")
-        # The resolution Operator reports what it sent. Anything carrying a
-        # notification or resolution outcome means this ticket was acted on.
-        if key and any(
-            field in payload
+        if not key:
+            continue
+
+        # A rejected run reports the same fields as a successful one, with null
+        # values — it names what it *would* have sent. Treating the presence of
+        # the key as proof of delivery marked a ticket resolved that the
+        # Operator had refused, and then skipped it forever.
+        #
+        # Acted on means something actually went out: a comment posted, an email
+        # sent, or the run itself reporting success.
+        if str(payload.get("run_status") or "").upper() in ("REJECTED_INPUT", "FAILED"):
+            continue
+
+        delivered = any(
+            str(payload.get(field) or "").upper() in ("SUCCESS", "SENT", "POSTED", "OK")
             for field in (
                 "notification_status",
                 "email_status",
                 "resolution_status",
-                "notification_recipient",
+                "github_comment_status",
             )
-        ):
+        )
+        if delivered:
             done.add(str(key))
     return done
 

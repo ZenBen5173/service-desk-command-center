@@ -79,7 +79,6 @@ const navItems: NavSection[] = [
     title: 'Beyond the brief',
     items: [
       { href: '/elimination', label: 'Elimination', icon: Icons.target },
-      { href: '/ai/resolution', label: 'Auto Resolution', icon: Icons.zap },
       { href: '/data-manager', label: 'Data Manager', icon: Icons.database },
     ],
   },

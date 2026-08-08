@@ -385,7 +385,54 @@ def collect(db: Session) -> dict:
     ]
     recurring.sort(key=lambda c: _num(_field(c, "member_count", "volume", "ticket_count")) or 0, reverse=True)
 
-    for entry in recurring[:5]:
+    # One card for the whole set, not one per class. The Elimination Backlog
+    # already ranks these by what they cost and proposes the permanent fix for
+    # each — repeating five of them here filled this page with rows a reader had
+    # just seen, and made two screens look like they were saying the same thing
+    # twice. This page keeps what Elimination does not cover: incidents forming,
+    # knowledge gaps, the breach forecast, and where the load falls.
+    if recurring:
+        total_tickets = sum(
+            int(_num(_field(c, "member_count", "volume", "ticket_count")) or 0)
+            for c in recurring
+        )
+        with_fix = sum(1 for c in recurring if _field(c, "proposed_fix", "permanent_fix"))
+        top = recurring[0]
+        insights.append(
+            {
+                "id": "recurring::summary",
+                "type": "pattern",
+                "severity": "warning",
+                "title": f"{len(recurring)} recurring problems account for {total_tickets} tickets",
+                "description": (
+                    f"The largest is {(_field(top, 'label') or 'an unnamed class')}. "
+                    f"{with_fix} of the {len(recurring)} carry a permanent fix the "
+                    "agent proposed. They are ranked by what each one costs on the "
+                    "Elimination page rather than listed again here."
+                ),
+                "data": {
+                    "classes": len(recurring),
+                    "tickets": total_tickets,
+                    "classes_with_a_proposed_fix": with_fix,
+                },
+                "suggested_action": (
+                    "Work them in cost order on the Elimination page, highest first."
+                ),
+                "action_type": "eliminate",
+                "link": "/elimination",
+                "link_label": "Open the Elimination Backlog",
+                "action_plan": _plan(
+                    "eliminate",
+                    {"tickets": total_tickets},
+                    agent_fix=_field(top, "proposed_fix", "permanent_fix"),
+                    owning_team=_field(top, "owning_team", "assignment_group"),
+                ),
+                "source": sources.get("classes"),
+                "created_at": now,
+            }
+        )
+
+    for entry in []:
         volume = int(_num(_field(entry, "member_count", "volume", "ticket_count")) or 0)
         people = _num(_field(entry, "distinct_reporter_count", "distinct_reporters"))
         breaches = _num(_field(entry, "breached_count", "breaches", "breach_count"))

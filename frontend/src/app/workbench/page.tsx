@@ -19,6 +19,7 @@ import {
   type WorkbenchSummary,
 } from '@/lib/workbench'
 import { cn } from '@/lib/utils'
+import { DecisionsPanel } from '@/components/ai/DecisionsPanel'
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -535,9 +536,12 @@ export default function WorkbenchPage() {
   const [items, setItems] = useState<WorkbenchException[]>([])
   const [summary, setSummary] = useState<WorkbenchSummary | null>(null)
   const [groups, setGroups] = useState<WorkbenchGroupsResponse | null>(null)
-  const [filter, setFilter] = useState<'open' | 'resolved' | 'all' | 'classes'>(
-    'open'
-  )
+  // "decisions" shows every verdict the agent reached, not only the ones that
+  // reached a person. It used to be its own page, which split ticket-level work
+  // across two places in the nav for no reason a reader could see.
+  const [filter, setFilter] = useState<
+    'open' | 'classes' | 'decisions' | 'resolved' | 'all'
+  >('open')
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -545,7 +549,9 @@ export default function WorkbenchPage() {
   const load = useCallback(async () => {
     try {
       const listStatus =
-        filter === 'all' || filter === 'classes' ? undefined : filter
+        filter === 'all' || filter === 'classes' || filter === 'decisions'
+          ? undefined
+          : filter
       const [list, sum, grp] = await Promise.all([
         workbenchApi.list(listStatus, 200),
         workbenchApi.summary(),
@@ -645,7 +651,7 @@ export default function WorkbenchPage() {
         className='flex flex-wrap items-center gap-2'
         variants={itemVariants}
       >
-        {(['open', 'classes', 'resolved', 'all'] as const).map((f) => (
+        {(['open', 'classes', 'decisions', 'resolved', 'all'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -658,7 +664,9 @@ export default function WorkbenchPage() {
           >
             {f === 'classes'
               ? `By class${groups ? ` (${groups.group_count})` : ''}`
-              : f}
+              : f === 'decisions'
+                ? 'All decisions'
+                : f}
           </button>
         ))}
         <Button
@@ -676,6 +684,17 @@ export default function WorkbenchPage() {
         </Button>
         {error && <span className='text-xs text-red-600'>{error}</span>}
       </motion.div>
+
+      {filter === 'decisions' && (
+        <motion.div variants={itemVariants}>
+          <p className='mb-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground'>
+            Every verdict the evidence Operator reached, including the ones that
+            never needed a person. The queue above is the subset it refused to
+            act on alone.
+          </p>
+          <DecisionsPanel embedded />
+        </motion.div>
+      )}
 
       {filter === 'classes' && groups && (
         <motion.div variants={itemVariants} className='space-y-3'>
@@ -698,7 +717,7 @@ export default function WorkbenchPage() {
         </motion.div>
       )}
 
-      {filter !== 'classes' && !loading && items.length === 0 && (
+      {filter !== 'classes' && filter !== 'decisions' && !loading && items.length === 0 && (
         <motion.div
           variants={itemVariants}
           className='rounded-xl border border-dashed border-border/60 py-12 text-center'
@@ -713,7 +732,7 @@ export default function WorkbenchPage() {
         </motion.div>
       )}
 
-      {filter !== 'classes' && (
+      {filter !== 'classes' && filter !== 'decisions' && (
         <motion.div className='space-y-3' variants={itemVariants}>
           {items.map((item) => (
             <ExceptionCard key={item.id} item={item} onChanged={load} />
