@@ -345,7 +345,7 @@ title(s, [
 ])
 body(s, 'ITSM-2212 had a fix ready and an open change request awaiting board approval. Change control outranks confidence, so the agent opened the approval in GitHub rather than shipping. A human reviewed it and upheld the block.', 3.25, { w: 10.4, h: 1.0 })
 stats(s, [
-  { n: '9,752', l: 'policy evaluations logged' },
+  { n: '13,822', l: 'policy evaluations logged' },
   { n: '4', l: 'policies, editable without code' },
   { n: '176', l: 'waiting on a human', accent: true },
 ], 4.5)
@@ -442,7 +442,7 @@ s.addShape(pres.ShapeType.line, {
 })
 
 stats(s, [
-  { n: '96', l: 'agent runs · 97.8% success' },
+  { n: '137', l: 'agent runs · 98.5% success' },
   { n: '8', l: 'live integrations' },
   { n: '0', l: 'agent logic in our codebase', accent: true },
 ], 5.85, true)

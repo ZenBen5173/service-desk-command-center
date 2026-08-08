@@ -86,7 +86,7 @@ That last line matters. It shows you expected to be challenged.
 
 **Switch to:** the Dashboard, scroll to Agent Activity.
 
-> "Ninety-six runs, ninety-eight percent success. The Command Center never
+> "A hundred and thirty-seven runs, ninety-eight point five percent success. The Command Center never
 > decides anything — it reads what the agents did."
 
 **Open one Orchestrator run's timeline. Scroll through the steps.**
@@ -111,7 +111,7 @@ That last line matters. It shows you expected to be challenged.
 
 **Switch to:** AI Policies.
 
-> "Four policies, all editable without code. Nine thousand seven hundred
+> "Four policies, all editable without code. Thirteen thousand eight hundred
 > evaluations logged."
 
 **Open the evaluation log tab. Point at a blocked row.**
@@ -141,7 +141,7 @@ Reset it to 0.85 afterwards.
 
 **Switch to:** Workbench.
 
-> "A hundred and seventy-seven items are waiting on a person, and they're not a
+> "Two hundred and forty-seven items are waiting on a person, and they're not a
 > pile of failures — they're four different kinds of stop."
 
 **Open a `change approval` item — ITSM-2211.**
@@ -252,15 +252,18 @@ Reset it to 0.85 afterwards.
 | Figure | Value |
 |---|---|
 | Operators on Auto | 7, plus 1 Orchestrator |
-| Agent runs | 96 · 97.8% success |
+| Agent runs | 137 · 98.5% success |
+| Tickets decided individually | 33 · 1 auto-resolved at 0.98 · 0 undecided |
+| Auto-resolution rate | 3.0% · 17 blocks share one cause |
+| Workbench classes | 84 groups over 143 items · 104 individual |
 | Ticket classes found | 15, covering all 460 tickets |
 | Awaiting human approval | 5 classes |
 | Collapsed now | 75 tickets |
 | Preventable | 380 tickets |
 | Knowledge articles drafted | 8, awaiting approval |
-| Policy evaluations logged | 9,752 |
+| Policy evaluations logged | 13,822 |
 | Insights | 12 — 6 critical, 6 warning |
-| Workbench | 177 open |
+| Workbench | 247 open |
 | Integrations | 8 across 8 categories |
 | SLA on business hours | 428 of 460 (93%) |
 | CSAT | 3.67 / 5 from 76 responses |
@@ -294,10 +297,23 @@ which step produced it. Where an input is missing we say so — the ranking list
 exactly which inputs each class lacked and confirms they contributed nothing.
 
 **"Does it actually resolve tickets automatically?"**
-It decides which tickets are safe to resolve automatically — you can see it clear
-one at 0.99 confidence against five policy gates. In the batch cycle it escalates
-instead, because it can't confirm confidence per ticket, and it won't act without
-that. We'd rather it stopped than guessed.
+Yes, and we report the rate honestly: 3.0%. Thirty-three tickets have been
+decided one at a time by the evidence Operator; one cleared at 0.98 against five
+policy gates and was resolved, commented on in GitHub and emailed to the
+requester. Thirty-two were blocked — and seventeen of those for the same reason:
+the matched knowledge article isn't marked safe for automation. That's not the
+agent being timid, it's the knowledge base not covering the problem, which is
+exactly what the Elimination Backlog ranks. Ship those articles and the rate
+moves. We'd rather report 3% we can trace than a bigger number we can't.
+
+**"Why one ticket at a time and not the batch?"**
+Because Auto returns zero bytes from a sub-workflow call to its parent. The
+Orchestrator never receives per-ticket confidence, so it escalates everything on
+a 0.00 that was never produced. We tried six times across five approaches;
+Supervity's own chat eventually said its planner summarises instructions rather
+than writing the code. So the Command Center calls the same Operators over the
+same public API, in the same order, and records what they say. It sequences; it
+does not decide.
 
 **"Why is MTTR blank?"**
 Because no Operator reports resolution timestamps yet. We could have inferred one

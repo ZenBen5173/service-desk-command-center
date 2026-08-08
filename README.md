@@ -70,7 +70,7 @@ A human reviewed it and upheld the block, and that decision is on the record wit
 its reason.
 
 Every refusal reaches a person with the evidence that stopped the agent and what
-it would have done instead. **9,752 policy evaluations** are logged, each naming
+it would have done instead. **13,822 policy evaluations** are logged, each naming
 the rule, the threshold in force at that moment, and what it was compared
 against, so a later edit never rewrites history.
 
@@ -109,6 +109,46 @@ against.
 
 → `/`, `/data-manager`, AI Manager
 
+### A fourth thing, found on the day
+
+The Orchestrator on Auto calls its Operators as sub-workflows and **gets zero
+bytes back**. No per-ticket confidence ever reaches the routing step, so it
+compares nothing against the threshold and escalates every ticket on a
+confidence of `0.00` that was never produced. Six attempts across five
+approaches did not move it; Supervity's own chat eventually admitted its planner
+"summarizes the instructions rather than embedding the raw code".
+
+The same Operator answers correctly when asked about **one ticket at a time**.
+So the Command Center asks it that way, over the same public API, and records
+what it says:
+
+- 33 tickets decided individually, 0 left undecided
+- 1 cleared at **0.98 confidence** against five policy gates
+- 32 escalated — **and 17 of those for the same reason**: the matched knowledge
+  article is not marked safe for automation
+
+That last number is the point. **Auto-resolution is 3.0% because the knowledge
+base does not cover these problems** — which is precisely the knowledge gap the
+Elimination Backlog ranks and proposes writing articles for. The two
+differentiators are the same finding from opposite ends.
+
+No decision logic lives here. Every ALLOW, every block, every confidence and
+every policy evaluation is the Operator's on Auto. This chooses which ticket to
+ask about and stores the answer, and hands anything cleared to the resolution
+Operator, which closes the ticket, comments on the issue of record and emails
+the requester. Which Operator to ask is discovered from input schemas rather
+than names, and thresholds come from the live policies — so editing the
+confidence gate changes what the agent is asked on the next sweep.
+
+**One decision, a whole class.** A queue of 247 items is not 247 decisions: 143
+of them fall into 84 classes the Operators themselves clustered, and a decision
+on a class is written to every item in it. The other 104 are change approvals
+and rollback verifications, which no Operator clustered and which each concern
+one specific change — they stay individual, and the count is reported rather
+than folded in.
+
+→ `/workbench`
+
 ---
 
 ## What it is
@@ -127,11 +167,14 @@ ranks it, and shows which run produced it.
 | | |
 |---|---|
 | Agents | 1 Orchestrator + 7 Operators on Supervity Auto |
-| Agent runs mirrored | 96 · 97.8% success |
+| Agent runs mirrored | 137 · 98.5% success |
 | Ticket classes found | 15, covering all 460 tickets |
 | Deflection | 75 collapsed · 380 preventable |
-| Policy evaluations logged | 9,752 |
-| Workbench | 176 awaiting a human · 1 resolved |
+| Policy evaluations logged | 13,822 |
+| Workbench | 247 awaiting a human · 2 resolved |
+| Workbench classes | 84 groups covering 143 items · 104 decided individually |
+| Tickets decided per ticket | 33 · 1 auto-resolved at 0.98 · 0 left undecided |
+| Auto-resolution rate | 3.0% — 17 of the blocks are one missing-article cause |
 | Integrations | 8 across 8 categories |
 | Backend tests | 46 passing |
 

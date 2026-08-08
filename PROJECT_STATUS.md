@@ -46,8 +46,8 @@ Full detail in the README; the panels are at `/elimination`, `/workbench` and
 | # | Requirement | Status | Evidence |
 |---|---|---|---|
 | 1 | Orchestrator + ≥5 Operators on Auto | ✅ | **7 Operators + 1 Orchestrator**, parallel start, three-way branch, human gates |
-| 2 | Command Center on live agent data | ✅ | 96 real runs, 97.8% success — no template demo data left anywhere |
-| 3 | ≥3 editable policies, every evaluation logged | ✅ | **4 policies · 9,752 evaluations**, each naming the rule, the threshold in force and what it was compared against |
+| 2 | Command Center on live agent data | ✅ | 137 real runs, 98.5% success — no template demo data left anywhere |
+| 3 | ≥3 editable policies, every evaluation logged | ✅ | **4 policies · 13,822 evaluations**, each naming the rule, the threshold in force and what it was compared against |
 | 4 | Live exception resolved in the Workbench | ✅ | **176 open** across 4 stop reasons, each with the evidence that stopped the agent. ITSM-2212 resolved on the deployed instance: the block was upheld because the change request is still open with CAB, with the reason on the record |
 | 5 | ≥3 integrations across 2 categories | ✅ | **8 integrations across 8 categories**, discovered from Auto rather than declared |
 
