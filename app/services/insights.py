@@ -24,6 +24,7 @@ from sqlalchemy.orm import Session
 
 from ..models.agent import AgentActivity, AgentRun, AgentWorkflow
 from ..models.workbench import WorkbenchException
+from .elimination import FIELD_ALIASES, _first
 
 log = logging.getLogger(__name__)
 
@@ -145,9 +146,20 @@ def _classes_and_queue(db: Session) -> tuple[list[dict], list[dict], dict[str, s
 
 
 def _field(entry: dict, *names: str) -> Any:
+    """Resolve a field through the same aliases the Elimination Backlog uses.
+
+    The Operators generate their own key names, so the same class can arrive as
+    `proposed_fix` on one run and `recommendation` on the next. Looking only for
+    the exact names left this page reporting "No permanent fix proposed yet" for
+    classes whose fix was sitting right there under a different key, while the
+    Elimination page displayed it correctly off the same payload. Two pages
+    disagreeing about the same run is worse than either being sparse.
+    """
     for n in names:
-        if entry.get(n) is not None:
-            return entry[n]
+        for alias in FIELD_ALIASES.get(n, (n,)):
+            value = _first(entry, (alias,))
+            if value is not None:
+                return value
     return None
 
 
@@ -177,7 +189,7 @@ def collect(db: Session) -> dict:
                 "id": f"recurring::{_field(entry, 'cluster_key', 'class_key', 'key')}",
                 "type": "pattern",
                 "severity": "warning" if (breaches or 0) > 0 else "info",
-                "title": (_field(entry, "summary", "label", "name") or "Recurring problem")[:120],
+                "title": (_field(entry, "label") or "Recurring problem")[:120],
                 "description": (
                     f"{volume} tickets from "
                     f"{int(people) if people else 'multiple'} people describe the same "
@@ -211,7 +223,7 @@ def collect(db: Session) -> dict:
                 "id": f"incident::{_field(entry, 'cluster_key', 'key')}",
                 "type": "anomaly",
                 "severity": "critical",
-                "title": f"Major incident: {(_field(entry, 'summary', 'label') or 'unnamed cluster')[:90]}",
+                "title": f"Major incident: {(_field(entry, 'label') or 'unnamed cluster')[:90]}",
                 "description": (
                     f"{volume} separate tickets from "
                     f"{int(people) if people else 'multiple'} people share one root cause"
@@ -246,6 +258,12 @@ def collect(db: Session) -> dict:
         or str(_field(c, "classification", "treatment") or "").upper() == "KNOWLEDGE_GAP"
     ]
     gaps.sort(key=lambda c: _num(_field(c, "member_count", "volume", "ticket_count")) or 0, reverse=True)
+    # Skip anything already listed as a recurring pattern above. The same class
+    # qualifying on two counts is one finding, not two rows saying the same
+    # thing with different headings.
+    already = {i["id"].split("::", 1)[-1] for i in insights}
+    gaps = [g for g in gaps
+            if str(_field(g, "cluster_key", "class_key", "key")) not in already]
     for entry in gaps[:4]:
         volume = int(_num(_field(entry, "member_count", "volume", "ticket_count")) or 0)
         if volume < 2:
@@ -255,7 +273,7 @@ def collect(db: Session) -> dict:
                 "id": f"gap::{_field(entry, 'cluster_key', 'class_key', 'key')}",
                 "type": "recommendation",
                 "severity": "warning",
-                "title": f"No knowledge article: {(_field(entry, 'summary', 'label') or 'unnamed')[:90]}",
+                "title": f"No knowledge article: {(_field(entry, 'label') or 'unnamed class')[:90]}",
                 "description": (
                     f"{volume} tickets on this problem and no article covering it. "
                     "Every one was answered from scratch."
