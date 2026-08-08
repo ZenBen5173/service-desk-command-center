@@ -144,6 +144,9 @@ export function BusinessOutcomes({ className }: { className?: string }) {
           hint={
             resolution
               ? `${resolution.allowed} allowed · ${resolution.human_review} to review` +
+                (resolution.acted_on !== undefined
+                  ? ` · ${resolution.acted_on} acted on, ${resolution.cleared_awaiting_action} awaiting action`
+                  : '') +
                 (resolution.basis === 'individual_operator_runs'
                   ? ' · from single-ticket runs, not a full cycle'
                   : ` · across ${resolution.decisions} ticket${resolution.decisions === 1 ? '' : 's'} this cycle`)

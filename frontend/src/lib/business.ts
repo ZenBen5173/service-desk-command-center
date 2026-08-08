@@ -38,6 +38,10 @@ export interface BusinessMetrics {
      * claim than one from a batch, and the UI says which it is.
      */
     basis?: 'orchestrator_cycle' | 'individual_operator_runs'
+    /** Cleared tickets the resolution Operator actually acted on — an email
+     *  sent or a comment posted. Cleared is a decision; this is the deed. */
+    acted_on?: number
+    cleared_awaiting_action?: number
   } | null
   deflection: {
     collapsed_now: CountBlock | null

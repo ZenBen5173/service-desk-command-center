@@ -242,9 +242,10 @@ def collect(db: Session) -> dict:
     # echoed its decision, and only saw the newest run of each workflow — which
     # left the Dashboard reporting four decisions where nineteen tickets had
     # been decided.
-    from .resolution import read_decisions
+    from .resolution import _already_resolved, read_decisions
 
     per_ticket = read_decisions(db)
+    acted_on = _already_resolved(db)
     decisions: dict[str, int] = {}
     for entry in per_ticket["decisions"]:
         key = str(entry["decision"]).strip().upper().replace(" ", "_")
@@ -281,6 +282,13 @@ def collect(db: Session) -> dict:
             "basis": "individual_operator_runs",
             "avg_confidence": per_ticket["avg_confidence"],
             "decisions_without_confidence": per_ticket["decisions_without_confidence"],
+            # Cleared is not the same as done. A ticket the agent judged safe
+            # still has to be resolved, commented on and communicated, and the
+            # resolution Operator runs its own guardrails on the evidence and
+            # sometimes refuses. Reporting only the rate invites the reader to
+            # assume every cleared ticket was acted on.
+            "acted_on": len(acted_on),
+            "cleared_awaiting_action": max(allowed - len(acted_on), 0),
         }
         sources["resolution"] = "Ticket Evidence and Policy Operator"
 
