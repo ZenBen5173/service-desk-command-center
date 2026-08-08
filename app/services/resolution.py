@@ -454,6 +454,56 @@ def _already_resolved(db: Session) -> set[str]:
     return done
 
 
+def _resolution_outcome(result: Any) -> dict:
+    """What the resolution run actually did, read from the run itself.
+
+    The Operator answers synchronously, so its step outputs come back on the
+    execute response. It reports delivery per channel and lists the guardrails
+    that stopped it, and those are the only things worth believing here.
+    """
+    if not isinstance(result, dict):
+        return {"status": "unconfirmed", "reason": "Auto returned no run detail."}
+
+    email = github = None
+    errors: list = []
+    run_status = None
+
+    for activity in result.get("activityRuns") or []:
+        raw = (activity.get("outputs") or {}).get("output") or ""
+        if "{" not in raw:
+            continue
+        try:
+            payload = json.loads(raw[raw.find("{") :])
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        email = payload.get("email_status") or email
+        github = payload.get("github_comment_url") or github
+        run_status = payload.get("run_status") or run_status
+        if payload.get("validation_errors"):
+            errors = payload["validation_errors"]
+
+    delivered = str(email or "").upper() in ("SENT", "SUCCESS") or bool(github)
+    if delivered:
+        return {
+            "status": "resolved",
+            "email_status": email,
+            "github_comment_url": github,
+        }
+
+    if errors or str(run_status or "").upper() in ("REJECTED_INPUT", "FAILED"):
+        return {
+            "status": "refused",
+            "reason": "; ".join(str(e) for e in errors)[:300]
+            or f"The Operator returned {run_status}.",
+        }
+
+    # Nothing said either way — usually a reply cut off mid-run. Never reported
+    # as resolved, because a retry is safer than a false claim.
+    return {"status": "unconfirmed", "reason": "The run reported no delivery."}
+
+
 async def resolve_allowed(
     db: Session, client: SupervityClient, limit: int = 25
 ) -> dict:
@@ -487,14 +537,20 @@ async def resolve_allowed(
 
     allowed = [d for d in read_decisions(db)["decisions"] if d["auto_resolved"]]
     done = _already_resolved(db)
-    todo = [d for d in allowed if d["issue_key"] not in done][:limit]
+    outstanding = [d for d in allowed if d["issue_key"] not in done]
+    # Reported separately. Counting "everything this batch did not reach" as
+    # already resolved turned a small `limit` into a claim that seven tickets
+    # had been acted on when two had.
+    skipped_already_done = len(allowed) - len(outstanding)
+    todo = outstanding[:limit]
+    not_reached = max(len(outstanding) - len(todo), 0)
 
     if not todo:
         return {
             "ran": True,
             "operator": workflow.name,
             "cleared_for_resolution": len(allowed),
-            "already_resolved": len(allowed) - len(todo),
+            "already_resolved": skipped_already_done,
             "resolved_now": 0,
             "results": [],
             "note": "Every cleared ticket has already been acted on.",
@@ -565,12 +621,37 @@ async def resolve_allowed(
             run_id = result.get("id") or (result.get("workflowRun") or {}).get("id")
         if run_id:
             run_ids.append(run_id)
+
+        # A run id means the Operator was asked, not that it agreed. It runs its
+        # own guardrails on the evidence and refuses when they fail, and reading
+        # a returned id as success reported three tickets resolved that the
+        # Operator had rejected. Claiming an action the audit log denies is the
+        # exact failure this whole build argues against, so the outcome is read
+        # out of the run itself.
+        detail = result
+        if run_id:
+            try:
+                detail = await client.get_run(run_id)
+            except SupervityError as exc:
+                log.warning("Could not read resolution run %s: %s", run_id, exc)
+        outcome = _resolution_outcome(detail)
         results.append(
             {
                 "issue_key": issue_key,
-                "status": "resolved",
+                "status": outcome["status"],
                 "confidence": decision["confidence"],
                 "auto_run_id": run_id,
+                **({"reason": outcome["reason"]} if outcome.get("reason") else {}),
+                **(
+                    {"email_status": outcome["email_status"]}
+                    if outcome.get("email_status")
+                    else {}
+                ),
+                **(
+                    {"github_comment_url": outcome["github_comment_url"]}
+                    if outcome.get("github_comment_url")
+                    else {}
+                ),
             }
         )
 
@@ -584,8 +665,14 @@ async def resolve_allowed(
         "ran": True,
         "operator": workflow.name,
         "cleared_for_resolution": len(allowed),
-        "already_resolved": len(allowed) - len(todo),
+        "already_resolved": skipped_already_done,
+        # Cleared, not yet acted on, and outside this batch. Not a claim of
+        # anything having happened to them.
+        "not_reached_this_batch": not_reached,
         "resolved_now": sum(1 for r in results if r["status"] == "resolved"),
+        # Asked and refused by the Operator's own guardrails. Counted, never
+        # folded into the resolved figure.
+        "refused": sum(1 for r in results if r["status"] == "refused"),
         "unconfirmed": sum(1 for r in results if r["status"] == "unconfirmed"),
         "results": results,
     }
