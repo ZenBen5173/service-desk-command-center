@@ -14,6 +14,8 @@ import {
   RESOLUTION_LABEL,
   type Resolution,
   type WorkbenchException,
+  type WorkbenchGroup,
+  type WorkbenchGroupsResponse,
   type WorkbenchSummary,
 } from '@/lib/workbench'
 import { cn } from '@/lib/utils'
@@ -29,6 +31,193 @@ const itemVariants = {
 }
 
 const RESOLUTIONS: Resolution[] = ['approve', 'reject', 'modify', 'more_info']
+
+/**
+ * One class of items, decided once.
+ *
+ * A queue of hundreds is not hundreds of decisions — most of it is the same
+ * problem arriving under different ticket numbers, and the Operators already
+ * said which items belong together. Deciding a class writes the same decision
+ * to every open item in it, individually, so the audit trail keeps a row per
+ * item rather than one row standing in for many.
+ */
+function GroupCard({
+  group,
+  onChanged,
+}: {
+  group: WorkbenchGroup
+  onChanged: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [choice, setChoice] = useState<Resolution | null>(null)
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const submit = async () => {
+    if (!choice) return
+    if (choice === 'modify' && !note.trim()) {
+      setError('A note is required when modifying the agent’s recommendation.')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      await workbenchApi.resolveGroup(group.group_key, choice, note.trim() || undefined)
+      setChoice(null)
+      setNote('')
+      setOpen(false)
+      onChanged()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not record the decision.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className='relative overflow-hidden'>
+      <CardWatermark opacity={3} scale={1} />
+      <CardContent className='relative z-10 p-4'>
+        <button
+          onClick={() => setOpen(!open)}
+          className='flex w-full items-start gap-3 text-left'
+        >
+          <span className='mt-0.5 flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg bg-brand-navy/8 px-2 font-display text-sm font-bold text-brand-navy'>
+            {group.item_count}
+          </span>
+
+          <div className='min-w-0 flex-1 space-y-1'>
+            <div className='flex flex-wrap items-center gap-2'>
+              <span className='font-medium capitalize text-brand-navy'>
+                {group.group_key}
+              </span>
+              {group.owning_team && (
+                <span className='rounded-full border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground'>
+                  {group.owning_team}
+                </span>
+              )}
+              {group.kb_status && (
+                <span className='rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700'>
+                  KB {group.kb_status}
+                </span>
+              )}
+            </div>
+            <p className='text-sm text-muted-foreground'>{group.title}</p>
+          </div>
+
+          <Icons.chevronDown
+            className={cn(
+              'mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+              open && 'rotate-180'
+            )}
+          />
+        </button>
+
+        <AnimatePresence initial={false}>
+          {open && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className='overflow-hidden'
+            >
+              <div className='mt-4 space-y-4 border-t border-border/40 pt-4'>
+                {group.proposed_fix && (
+                  <div>
+                    <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+                      The agent’s proposed permanent fix
+                    </p>
+                    <p className='text-sm text-brand-navy'>{group.proposed_fix}</p>
+                  </div>
+                )}
+
+                <div className='flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground'>
+                  <span>
+                    items here:{' '}
+                    <strong className='text-brand-navy'>{group.item_count}</strong>
+                  </span>
+                  {group.class_size_reported_by_agent && (
+                    <span>
+                      class size reported by the agent:{' '}
+                      <strong className='text-brand-navy'>
+                        {group.class_size_reported_by_agent}
+                      </strong>
+                    </span>
+                  )}
+                  {group.affected_system && (
+                    <span>
+                      system:{' '}
+                      <strong className='text-brand-navy'>
+                        {group.affected_system}
+                      </strong>
+                    </span>
+                  )}
+                </div>
+
+                {group.tickets.length > 0 && (
+                  <div>
+                    <p className='mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-muted'>
+                      Covered by this decision
+                    </p>
+                    <p className='text-xs text-muted-foreground'>
+                      {group.tickets.join(' · ')}
+                    </p>
+                  </div>
+                )}
+
+                <div className='flex flex-wrap gap-2'>
+                  {RESOLUTIONS.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setChoice(r)}
+                      className={cn(
+                        'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+                        choice === r
+                          ? 'border-brand-navy bg-brand-navy text-white'
+                          : 'border-border/60 bg-white/60 text-muted-foreground hover:text-brand-navy'
+                      )}
+                    >
+                      {RESOLUTION_LABEL[r]}
+                    </button>
+                  ))}
+                </div>
+
+                {choice && (
+                  <div className='space-y-2'>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      rows={2}
+                      placeholder={
+                        choice === 'modify'
+                          ? 'What should happen instead? (required)'
+                          : 'Why (optional, but it goes on the record)'
+                      }
+                      className='w-full rounded-lg border border-border/60 bg-white/70 px-3 py-2 text-sm'
+                    />
+                    <div className='flex items-center gap-2'>
+                      <Button size='sm' onClick={submit} disabled={busy}>
+                        {busy
+                          ? 'Recording…'
+                          : `Apply to all ${group.item_count} items`}
+                      </Button>
+                      <span className='text-[11px] text-muted-foreground'>
+                        Written to each item separately, noting it was decided as
+                        a class.
+                      </span>
+                    </div>
+                    {error && <p className='text-xs text-red-600'>{error}</p>}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CardContent>
+    </Card>
+  )
+}
 
 function Metric({
   label,
@@ -313,19 +502,26 @@ function ExceptionCard({
 export default function WorkbenchPage() {
   const [items, setItems] = useState<WorkbenchException[]>([])
   const [summary, setSummary] = useState<WorkbenchSummary | null>(null)
-  const [filter, setFilter] = useState<'open' | 'resolved' | 'all'>('open')
+  const [groups, setGroups] = useState<WorkbenchGroupsResponse | null>(null)
+  const [filter, setFilter] = useState<'open' | 'resolved' | 'all' | 'classes'>(
+    'open'
+  )
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const [list, sum] = await Promise.all([
-        workbenchApi.list(filter === 'all' ? undefined : filter, 200),
+      const listStatus =
+        filter === 'all' || filter === 'classes' ? undefined : filter
+      const [list, sum, grp] = await Promise.all([
+        workbenchApi.list(listStatus, 200),
         workbenchApi.summary(),
+        workbenchApi.groups(),
       ])
       setItems(list.exceptions)
       setSummary(sum)
+      setGroups(grp)
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load the queue.')
@@ -417,7 +613,7 @@ export default function WorkbenchPage() {
         className='flex flex-wrap items-center gap-2'
         variants={itemVariants}
       >
-        {(['open', 'resolved', 'all'] as const).map((f) => (
+        {(['open', 'classes', 'resolved', 'all'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -428,7 +624,9 @@ export default function WorkbenchPage() {
                 : 'border-border/60 bg-white/60 text-muted-foreground hover:text-brand-navy'
             )}
           >
-            {f}
+            {f === 'classes'
+              ? `By class${groups ? ` (${groups.group_count})` : ''}`
+              : f}
           </button>
         ))}
         <Button
@@ -447,7 +645,28 @@ export default function WorkbenchPage() {
         {error && <span className='text-xs text-red-600'>{error}</span>}
       </motion.div>
 
-      {!loading && items.length === 0 && (
+      {filter === 'classes' && groups && (
+        <motion.div variants={itemVariants} className='space-y-3'>
+          <p className='rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground'>
+            <strong className='text-brand-navy'>
+              {groups.items_in_groups} items fall into {groups.group_count}{' '}
+              classes
+            </strong>{' '}
+            the Operators clustered themselves. Decide one and it applies to
+            every item in it.{' '}
+            <strong className='text-brand-navy'>
+              {groups.ungrouped_items} stay individual
+            </strong>{' '}
+            — {groups.ungrouped_note}
+          </p>
+
+          {groups.groups.map((group) => (
+            <GroupCard key={group.group_key} group={group} onChanged={load} />
+          ))}
+        </motion.div>
+      )}
+
+      {filter !== 'classes' && !loading && items.length === 0 && (
         <motion.div
           variants={itemVariants}
           className='rounded-xl border border-dashed border-border/60 py-12 text-center'
@@ -462,11 +681,13 @@ export default function WorkbenchPage() {
         </motion.div>
       )}
 
-      <motion.div className='space-y-3' variants={itemVariants}>
-        {items.map((item) => (
-          <ExceptionCard key={item.id} item={item} onChanged={load} />
-        ))}
-      </motion.div>
+      {filter !== 'classes' && (
+        <motion.div className='space-y-3' variants={itemVariants}>
+          {items.map((item) => (
+            <ExceptionCard key={item.id} item={item} onChanged={load} />
+          ))}
+        </motion.div>
+      )}
     </motion.div>
   )
 }

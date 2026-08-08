@@ -56,6 +56,54 @@ export const workbenchApi = {
       { note }
     ),
   ingest: () => apiClient.post<Record<string, unknown>>('/api/workbench/ingest'),
+
+  /** Open items gathered into the classes the Operators put them in. */
+  groups: () => apiClient.get<WorkbenchGroupsResponse>('/api/workbench/groups'),
+
+  /** One decision written to every open item in a class. */
+  resolveGroup: (groupKey: string, resolution: Resolution, note?: string) =>
+    apiClient.post<{
+      group_key: string
+      resolution: Resolution
+      items_decided: number
+      tickets: string[]
+    }>(`/api/workbench/groups/${encodeURIComponent(groupKey)}/resolve`, {
+      resolution,
+      note,
+    }),
+}
+
+/**
+ * A class of items the Operators judged to be one problem.
+ *
+ * The grouping is theirs, not ours — every item carries the cluster the
+ * Operator assigned it. Items no Operator clustered are counted separately and
+ * stay individual, because they each concern one specific change.
+ */
+export interface WorkbenchGroup {
+  group_key: string
+  title: string
+  exception_type: string | null
+  reason: string | null
+  affected_system: string | null
+  owning_team: string | null
+  proposed_fix: string | null
+  kb_status: string | null
+  /** The class size the Operator reported, kept apart from how many happen
+   *  to be queued here. */
+  class_size_reported_by_agent: string | null
+  items: number[]
+  tickets: string[]
+  item_count: number
+  workflow_name: string | null
+}
+
+export interface WorkbenchGroupsResponse {
+  groups: WorkbenchGroup[]
+  group_count: number
+  items_in_groups: number
+  ungrouped_items: number
+  ungrouped_note: string
 }
 
 /** Plain-language labels for the exception types Operators raise. */
