@@ -53,7 +53,7 @@ Full detail in the README; the panels are at `/elimination`, `/workbench` and
 
 ## The five deliverables
 
-`docs/hackathon-brief.md` asks for five things, not just the mandatories:
+The Round 2 brief asks for five things, not just the mandatories:
 
 | # | Deliverable | Status |
 |---|---|---|
@@ -226,7 +226,7 @@ with the same schema.
 |---|---|---|
 | Public URL | ✅ done | https://autopilot-frontend-mafd.onrender.com — free tier sleeps after 15 min idle, so open it shortly before judging |
 | Demo video | **High** | 5–10 min per the brief; `DEMO_SCRIPT.md` runs 7 |
-| LinkedIn post | **High** | Three drafts ready in `LINKEDIN_POST.md`; same video, tag @Supervity and @Vijay Navaluri |
+| LinkedIn post | **High** | Drafts held outside the repo; same video, tag @Supervity and @Vijay Navaluri |
 | Resolve one Workbench item | ✅ done | ITSM-2212 rejected on the deployed site, reason recorded |
 | End-to-end auto-resolution | Known gap | The agent decides a ticket is safe (ALLOW at 0.99 standalone) but Auto returns an empty payload from that Operator to the Orchestrator, so batch tickets escalate on the confidence gate instead. Four attempts, three approaches. Two of three escalations in the last cycle were correct policy behaviour regardless |
 | Ghost Run | Not started | Replay decisions against the historical backlog. Time went into Operator correctness instead |
@@ -258,5 +258,4 @@ docker compose exec backend python -m pytest tests/ -q
 | `PROJECT_STATUS.md` | This file — start here |
 | `DEMO_SCRIPT.md` | The 4-minute demo, word for word |
 | `CLAUDE.md` | Mission, rules, dataset facts, anti-hardcoding constraints |
-| `Round2_Trap_Map_and_Plan.md` | Every seeded trap, mapped to actual rows |
 | `docs/auto-operators/` | Paste-ready build prompts for every Operator, plus the fix packs |

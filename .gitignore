@@ -323,3 +323,18 @@ drive-download-*/
 # Scratch
 *.tmp
 *.orig
+
+# Working notes, not deliverables
+# CLAUDE.md is our own build brief and Round2_Trap_Map is dataset analysis we
+# wrote for ourselves. Neither is part of the submission, and the brief belongs
+# to the organisers rather than to this repository.
+CLAUDE.md
+Round2_Trap_Map_and_Plan.md
+LINKEDIN_POST.md
+docs/hackathon-brief.md
+
+# Template boilerplate we never used. Shipped with the starter, describes
+# features this build replaced, and reads as ours if left in place.
+docs/Audit System Guide.md
+docs/command-center-guide.md
+docs/design-system-template.md

@@ -59,12 +59,16 @@ the architecture explains itself.
 
 **Screen:** Data Manager.
 
-> "Eight integrations, eight categories. Rather than read them out, let me
-> follow one ticket through them.
+> "Three external services do the real work, and I'll be straight about which
+> is which — this page lists eight things, and four of them are our own stack
+> rather than anything we integrated with.
+>
+> The three that matter are OneDrive, GitHub and Outlook. Let me follow one
+> ticket through them.
 >
 > **It starts in OneDrive.** That's where the service desk's data lives — the
 > ticket export, the knowledge base, the SLA calendars, the staff directory.
-> It's read-only to us, and the agents read it with their own credentials.
+> Read-only, and the agents read it with their own credentials.
 >
 > **It becomes a GitHub issue.** That's our system of record, and it's the one
 > choice worth explaining."
@@ -86,34 +90,29 @@ the architecture explains itself.
 > A ticket the agent touched looks exactly like a ticket a person touched. That
 > matters when the whole argument is that you can check its work."
 
-**Back to the flow. Point at each row as you name it — six left, one line each.**
+**Back to the flow.**
 
-> "The other six are quicker.
+> "**Then Outlook.** When a ticket resolves, the person who raised it gets a
+> real email — not a status change they have to go and look for. That's the
+> third external service, and it's the only one that reaches a human directly.
 >
-> **Supervity Auto** — the agent platform. One Orchestrator, seven Operators.
-> Every decision on this screen was made there, not here.
+> Those three are the integrations: a source, a system of record, and a
+> channel. Two of the three are read *and* written by the agents, not just
+> read."
+
+**Point at the remaining rows.**
+
+> "The other four on this page are honest about being our own stack rather than
+> integrations. Supervity Auto, where the agents actually run. Postgres, which
+> mirrors what they did so this page is instant instead of a spinner over
+> somebody else's API. The human input form, which is the hand-off point into
+> the Workbench. And a language model, which the Operators use on Auto — not
+> here. There is no model in this codebase at all.
 >
-> **Microsoft Outlook** — the channel out. When a ticket resolves, the person
-> who raised it gets a real email, not a status change they have to go and look
-> for.
->
-> **Microsoft OneDrive** — listed twice on purpose, as data source and as
-> storage. The tickets and the knowledge base come in from it; the reports the
-> agents write go back out to it.
->
-> **The human input form** — the hand-off point. When the agent won't act
-> alone, this is where it stops. That's the Workbench, and it's next.
->
-> **PostgreSQL** — everything the agents did, mirrored locally. It's why this
-> Command Center is instant instead of a spinner over somebody else's API, and
-> why it still shows you history if Auto is briefly unreachable.
->
-> **A language model** — used by the Operators on Auto for clustering and
-> classification. Not by this app. There is no model in this codebase at all,
-> which is why the chat here will tell you it doesn't know rather than guess.
->
-> And this page is generated from the workflows on Auto rather than hardcoded.
-> Connect something new there and it appears here on its own."
+> We list them because the page is generated from what the workflows on Auto
+> actually touch, not from a list we typed. Connect something new there and it
+> appears here on its own. But if you're counting integrations, the number is
+> three, and I'd rather say that than claim eight."
 
 **Point at a degraded badge.**
 
