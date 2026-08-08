@@ -65,9 +65,9 @@ Lead with the idea. The architecture comes later.
 
 **Point at the two deflection numbers.**
 
-> "We report deflection as two separate numbers, deliberately. Seventy-five
-> tickets already collapsed into single incidents — that work is avoided. Three
-> hundred and eighty are preventable if these fixes ship — that's a
+> "We report deflection as two separate numbers, deliberately. Forty
+> tickets already collapsed into single incidents — that work is avoided. Four
+> hundred and seventeen are preventable if these fixes ship — that's a
 > forecast, and we label it as one. Blending those into one headline would not
 > survive your first question."
 
@@ -86,7 +86,7 @@ That last line matters. It shows you expected to be challenged.
 
 **Switch to:** the Dashboard, scroll to Agent Activity.
 
-> "A hundred and thirty-seven runs, ninety-eight point five percent success. The Command Center never
+> "Two hundred and eighty-eight runs, ninety-nine point three percent success. The Command Center never
 > decides anything — it reads what the agents did."
 
 **Open one Orchestrator run's timeline. Scroll through the steps.**
@@ -111,7 +111,7 @@ That last line matters. It shows you expected to be challenged.
 
 **Switch to:** AI Policies.
 
-> "Four policies, all editable without code. Thirteen thousand eight hundred
+> "Four policies, all editable without code. Fifteen thousand three hundred
 > evaluations logged."
 
 **Open the evaluation log tab. Point at a blocked row.**
@@ -141,8 +141,10 @@ Reset it to 0.85 afterwards.
 
 **Switch to:** Workbench.
 
-> "Two hundred and forty-seven items are waiting on a person, and they're not a
-> pile of failures — they're four different kinds of stop."
+> "Thirty-six items are waiting on a person, and they're not a pile of failures
+> — they're five different kinds of stop. It read two hundred and sixty-seven
+> until we noticed the queue was counting how many times the agents had run
+> rather than how much work was waiting."
 
 **Open a `change approval` item — ITSM-2211.**
 
@@ -150,12 +152,12 @@ Reset it to 0.85 afterwards.
 > fix. It opened a GitHub issue in the system of record, then stopped, because an
 > open change request outranks its own confidence.
 >
-> Fifty tickets are sitting here for that reason — including the payroll
+> Five tickets are sitting here for that reason — including the payroll
 > outage itself, the biggest incident in the dataset."
 
 **Open a `verification required` item — ITSM-2216.**
 
-> "Twenty-four of these. A change was rolled back, so the agent forced the ticket
+> "Three of these. A change was rolled back, so the agent forced the ticket
 > back open and demanded verification rather than trusting the original fix."
 
 **Open one of the repeat-failure items — ITSM-2217.**
@@ -177,7 +179,7 @@ Reset it to 0.85 afterwards.
 
 **Switch to:** AI Insights.
 
-> "Twelve insights, none of them written by us — recurring problems, incidents
+> "Ten insights, none of them written by us — recurring problems, incidents
 > forming, knowledge gaps, an SLA breach forecast, and where the load falls."
 
 **Open the payroll major-incident card.**
@@ -242,7 +244,7 @@ Reset it to 0.85 afterwards.
 > That's the system we'd want running our service desk. Not the one that acts
 > fastest — the one that knows when to stop.
 >
-> And the number to judge us on: three hundred and seventy-seven tickets that
+> And the number to judge us on: four hundred and seventeen tickets that
 > don't need resolving, because they don't need to happen."
 
 ---
@@ -252,18 +254,18 @@ Reset it to 0.85 afterwards.
 | Figure | Value |
 |---|---|
 | Operators on Auto | 7, plus 1 Orchestrator |
-| Agent runs | 137 · 98.5% success |
-| Tickets decided individually | 33 · 1 auto-resolved at 0.98 · 0 undecided |
-| Auto-resolution rate | 3.0% · 17 blocks share one cause |
-| Workbench classes | 84 groups over 143 items · 104 individual |
+| Agent runs | 288 · 99.3% success |
+| Tickets decided individually | 153 · 2 auto-resolved · 308 still to run |
+| Auto-resolution rate | 1.3% · blocks share one cause |
+| Workbench classes | 22 classes · 14 individual |
 | Ticket classes found | 15, covering all 460 tickets |
 | Awaiting human approval | 5 classes |
-| Collapsed now | 75 tickets |
-| Preventable | 380 tickets |
+| Collapsed now | 40 tickets |
+| Preventable | 417 tickets |
 | Knowledge articles drafted | 8, awaiting approval |
-| Policy evaluations logged | 13,822 |
-| Insights | 12 — 6 critical, 6 warning |
-| Workbench | 247 open |
+| Policy evaluations logged | 15,294 |
+| Insights | 10 — 4 critical, 6 warning |
+| Workbench | 36 open · 22 classes · 14 individual |
 | Integrations | 8 across 8 categories |
 | SLA on business hours | 428 of 460 (93%) |
 | CSAT | 3.67 / 5 from 76 responses |

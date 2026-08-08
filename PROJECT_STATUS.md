@@ -24,7 +24,7 @@ and we report the number.
 ## Three things that make this different
 
 **1. Stop the tickets happening at all.** 460 tickets are really 15 root causes.
-75 already collapsed into single incidents, 380 preventable if the proposed fixes
+40 already collapsed into single incidents, 417 preventable if the proposed fixes
 ship. Reported as two figures, never blended.
 
 **2. Know when to stop.** Four independent refusal reasons in strict precedence,
@@ -46,8 +46,8 @@ Full detail in the README; the panels are at `/elimination`, `/workbench` and
 | # | Requirement | Status | Evidence |
 |---|---|---|---|
 | 1 | Orchestrator + ≥5 Operators on Auto | ✅ | **7 Operators + 1 Orchestrator**, parallel start, three-way branch, human gates |
-| 2 | Command Center on live agent data | ✅ | 137 real runs, 98.5% success — no template demo data left anywhere |
-| 3 | ≥3 editable policies, every evaluation logged | ✅ | **4 policies · 13,822 evaluations**, each naming the rule, the threshold in force and what it was compared against |
+| 2 | Command Center on live agent data | ✅ | 137 real runs, 99.3% success — no template demo data left anywhere |
+| 3 | ≥3 editable policies, every evaluation logged | ✅ | **4 policies · 15,294 evaluations**, each naming the rule, the threshold in force and what it was compared against |
 | 4 | Live exception resolved in the Workbench | ✅ | **176 open** across 4 stop reasons, each with the evidence that stopped the agent. ITSM-2212 resolved on the deployed instance: the block was upheld because the change request is still open with CAB, with the reason on the record |
 | 5 | ≥3 integrations across 2 categories | ✅ | **8 integrations across 8 categories**, discovered from Auto rather than declared |
 
@@ -135,7 +135,7 @@ archiving — plus the owning team.
 
 - **Collapsed now — 75 tickets** — shared one root cause, became a single
   incident with one response. Already avoided.
-- **Preventable — 380 tickets** — targeted by the proposed permanent fixes.
+- **Preventable — 417 tickets** — targeted by the proposed permanent fixes.
   A forecast, conditional on a human approving each one.
 
 Blending those into one headline would not survive a judge's first question.
@@ -150,7 +150,7 @@ Blending those into one headline would not survive a judge's first question.
 | SLA on business hours | 428 of 460 (93%) | Ticket Queue Triage |
 | Auto-resolution | 60% — 3 allowed, 2 to review, from single-ticket runs | Evidence and Policy |
 | MTTR | **not shown, by choice** | — |
-| Deflection | 75 collapsed · 380 preventable | Major-Incident Correlator |
+| Deflection | 40 collapsed · 417 preventable | Major-Incident Correlator |
 
 MTTR is deliberately absent with the reason printed on the dashboard: no
 Operator reports resolution timestamps, and this repo does not compute metrics

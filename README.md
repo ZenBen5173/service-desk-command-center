@@ -40,9 +40,9 @@ Group Policy drive mapping plus a self-service permissions portal would remove;
 printers offline is 43 that SNMP monitoring and a universal print driver would
 remove.
 
-**460 tickets turned out to be 15 root causes. 380 of them are preventable.**
-Reported as two figures that are never blended: **75 already collapsed** into
-single incidents (work avoided today), and **380 preventable** if the proposed
+**460 tickets turned out to be 15 root causes. 417 of them are preventable.**
+Reported as two figures that are never blended: **40 already collapsed** into
+single incidents (work avoided today), and **417 preventable** if the proposed
 fixes ship (a forecast, labelled as one). Adding them together would make a
 better headline and a worse answer.
 
@@ -70,7 +70,7 @@ A human reviewed it and upheld the block, and that decision is on the record wit
 its reason.
 
 Every refusal reaches a person with the evidence that stopped the agent and what
-it would have done instead. **13,822 policy evaluations** are logged, each naming
+it would have done instead. **15,294 policy evaluations** are logged, each naming
 the rule, the threshold in force at that moment, and what it was compared
 against, so a later edit never rewrites history.
 
@@ -122,12 +122,12 @@ The same Operator answers correctly when asked about **one ticket at a time**.
 So the Command Center asks it that way, over the same public API, and records
 what it says:
 
-- 33 tickets decided individually, 0 left undecided
-- 1 cleared at **0.98 confidence** against five policy gates
-- 32 escalated — **and 17 of those for the same reason**: the matched knowledge
+- 153 tickets decided individually and counting, out of 461
+- 2 cleared at **0.98 confidence** against five policy gates
+- the rest escalated — **overwhelmingly for one reason**: the matched knowledge
   article is not marked safe for automation
 
-That last number is the point. **Auto-resolution is 3.0% because the knowledge
+That last point is the point. **Auto-resolution is 1.3% because the knowledge
 base does not cover these problems** — which is precisely the knowledge gap the
 Elimination Backlog ranks and proposes writing articles for. The two
 differentiators are the same finding from opposite ends.
@@ -140,12 +140,19 @@ the requester. Which Operator to ask is discovered from input schemas rather
 than names, and thresholds come from the live policies — so editing the
 confidence gate changes what the agent is asked on the next sweep.
 
-**One decision, a whole class.** A queue of 247 items is not 247 decisions: 143
-of them fall into 84 classes the Operators themselves clustered, and a decision
-on a class is written to every item in it. The other 104 are change approvals
-and rollback verifications, which no Operator clustered and which each concern
-one specific change — they stay individual, and the count is reported rather
-than folded in.
+**One decision, a whole class.** The queue read 267 items until it was measuring
+the wrong thing: every cycle re-reported the same escalations, so 68 change
+approvals stood there for 5 actual tickets. One open item per subject now, and
+class-level items superseded wholesale by a later run — 267 becomes **36**. Of
+those, 22 fall into classes the Operators clustered and a decision on a class is
+written to every item in it; 14 are change approvals and rollback verifications,
+which no Operator clustered and which each concern one specific change, so they
+stay individual and are counted separately.
+
+**The knowledge gap loop.** Most blocks trace to a missing article, and the
+Knowledge Operator already writes one when it finds a gap. Those **8 drafted
+articles** now reach the Workbench for approval. The agent writes; a person
+publishes; the next run can clear that class.
 
 → `/workbench`
 
@@ -167,14 +174,14 @@ ranks it, and shows which run produced it.
 | | |
 |---|---|
 | Agents | 1 Orchestrator + 7 Operators on Supervity Auto |
-| Agent runs mirrored | 137 · 98.5% success |
+| Agent runs mirrored | 288 · 99.3% success |
 | Ticket classes found | 15, covering all 460 tickets |
-| Deflection | 75 collapsed · 380 preventable |
-| Policy evaluations logged | 13,822 |
-| Workbench | 247 awaiting a human · 2 resolved |
-| Workbench classes | 84 groups covering 143 items · 104 decided individually |
-| Tickets decided per ticket | 33 · 1 auto-resolved at 0.98 · 0 left undecided |
-| Auto-resolution rate | 3.0% — 17 of the blocks are one missing-article cause |
+| Deflection | 40 collapsed · 417 preventable |
+| Policy evaluations logged | 15,294 |
+| Workbench | 36 awaiting a human · 2 resolved |
+| Workbench classes | 22 classes covering 22 items · 14 decided individually |
+| Tickets decided per ticket | 153 · 2 auto-resolved · 308 still to run |
+| Auto-resolution rate | 1.3% — the blocks are overwhelmingly one missing-article cause |
 | Integrations | 8 across 8 categories |
 | Backend tests | 46 passing |
 
